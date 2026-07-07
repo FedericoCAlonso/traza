@@ -953,3 +953,67 @@ input[type=checkbox] {
   border: none !important;
   cursor: pointer;
 }
+/* ───────────────────────────────────────────────
+   LASER BLUETOOTH COMPONENT
+─────────────────────────────────────────────── */
+.laser-btn-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.laser-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--surface-3);
+  border: none;
+  border-radius: var(--r-full);
+  padding: 6px 10px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-1);
+}
+
+.laser-btn:hover {
+  background: var(--surface-4);
+  box-shadow: var(--shadow-2);
+}
+
+.laser-btn:active {
+  transform: scale(0.96);
+}
+
+.laser-btn.connected {
+  background: rgba(134,239,172,0.15); /* success bg */
+  box-shadow: none;
+}
+.laser-btn.connected:hover {
+  background: rgba(134,239,172,0.25);
+}
+
+.laser-icon {
+  font-size: 14px;
+}
+
+.laser-reading {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-container);
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  animation: card-flash 0.5s ease-out;
+}
+
+.laser-error {
+  font-size: 11px;
+  color: var(--error);
+  max-width: 200px;
+  line-height: 1.2;
+}
