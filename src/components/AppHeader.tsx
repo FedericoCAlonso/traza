@@ -49,10 +49,13 @@ export function AppHeader({
           >
             ↶
           </button>
-          <button className="btn btn-acc btn-sm" onClick={onShowExport}>
-            📥 Exportar
+          <button className="btn btn-acc btn-sm" onClick={onShowExport} title="Exportar">
+            <span style={{ fontSize: 16 }}>📥</span> <span className="hide-mobile">Exportar</span>
           </button>
-          <button className="btn btn-ghost btn-sm" onClick={onGoHome}>Cerrar</button>
+          <button className="btn btn-ghost btn-sm" onClick={onGoHome} title="Cerrar">
+            <span className="hide-mobile">Cerrar</span>
+            <span className="mobile-only" style={{ fontSize: 18 }}>✕</span>
+          </button>
         </div>
       )}
     </header>

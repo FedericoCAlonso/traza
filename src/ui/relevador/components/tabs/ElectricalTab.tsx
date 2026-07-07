@@ -55,7 +55,7 @@ export const ElectricalTab: React.FC<ElectricalTabProps> = React.memo(({
 
       <div style={{ padding: '0 8px 8px' }}>
         <button className="btn btn-acc btn-full" onClick={onShowNetlist}>
-          📄 Ver Listado de Materiales (Netlist)
+          <span className="truncate">📄 Ver Listado de Materiales (Netlist)</span>
         </button>
       </div>
 

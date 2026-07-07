@@ -493,6 +493,8 @@ main.main-content {
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 .btn::after {
   content: '';
@@ -861,6 +863,7 @@ input[type=checkbox] {
 .mobile-back-icon   { display: none; }
 
 @media (max-width: 768px) {
+  .hide-mobile { display: none !important; }
   body { font-size: 15px; }
   input[type=text], input[type=number], select, textarea { font-size: 16px; }
   .topbar {
@@ -875,7 +878,21 @@ input[type=checkbox] {
     flex-basis: 100%;
     justify-content: center;
     margin-left: 0 !important;
-    padding-bottom: 6px;
+    padding-bottom: 4px;
+  }
+  .panel-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+  .panel-tab {
+    flex: 0 0 auto;
+    min-width: 65px;
+    padding: 6px 4px 5px;
+  }
+  .amb-tab {
+    padding: 8px 10px;
+    font-size: 12px;
   }
   .mobile-back-icon { display: inline; font-weight: bold; font-size: 18px; color: var(--primary); }
   .mobile-only { display: inline !important; }
@@ -916,7 +933,23 @@ input[type=checkbox] {
   .zoom-controls { bottom: 14px; left: 14px; right: auto; }
   .dialog { padding: 20px; border-radius: var(--r-lg); gap: 16px; }
   .dialog-actions { flex-direction: column-reverse; gap: 8px; }
-  .dialog-actions .btn { width: 100%; }
+  .dialog-actions .btn { width: 100%; justify-content: center; }
+
+  /* Reducir padding de botones para que quepan mejor */
+  .btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+  .btn-sm {
+    padding: 8px 12px;
+  }
+  
+  /* Textos largos que deben truncarse */
+  .btn span.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 /* ───────────────────────────────────────────────

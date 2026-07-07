@@ -71,7 +71,7 @@ export const CreationFlowOverlay: React.FC<CreationFlowOverlayProps> = ({
               disabled={!creationFlow.anchor}
               onClick={() => onStepChange('B')}
             >
-              Siguiente: Definir Offset
+              <span className="truncate">Siguiente: Definir Offset</span>
             </button>
           </>
         ) : (
@@ -104,7 +104,7 @@ export const CreationFlowOverlay: React.FC<CreationFlowOverlayProps> = ({
             </div>
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
               <button className="btn btn-ghost" onClick={() => onStepChange('A')}>Atrás</button>
-              <button className="btn btn-acc btn-full" onClick={onConfirm}>Confirmar Creación</button>
+              <button className="btn btn-acc btn-full" onClick={onConfirm}><span className="truncate">Confirmar Creación</span></button>
             </div>
           </>
         )}

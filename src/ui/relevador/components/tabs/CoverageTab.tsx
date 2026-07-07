@@ -94,7 +94,7 @@ export const CoverageTab: React.FC<CoverageTabProps> = React.memo(({
               return { ...a, coberturas: ncs };
             })}
           >
-            + Agregar tramo de cobertura
+            <span className="truncate">+ Agregar tramo de cobertura</span>
           </button>
         </Card>
       ))}
@@ -102,7 +102,7 @@ export const CoverageTab: React.FC<CoverageTabProps> = React.memo(({
         className="btn btn-acc btn-full" 
         onClick={onStartCreation}
       >
-        + Nueva Zona de Cobertura
+        <span className="truncate">+ Nueva Zona de Cobertura</span>
       </button>
     </div>
   );
