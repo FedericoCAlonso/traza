@@ -1,10 +1,10 @@
 import { Card } from '../../../../ui/Card';
 import { F } from '../../../../ui/Field';
-import { calcularLongitudOrtogonal } from '../../../../lib/electrical/calculations';
 import type { Project, Ambiente } from '../../../../types/index';
-import { exportToCSV, exportToMarkdown } from '../../../../lib/exporters';
-import { getFullCircuitName, isBocaElectrica } from '../../../../lib/circuitUtils';
+import { exportAllProjectData } from '../../../../lib/exporters';
+import { isBocaElectrica } from '../../../../lib/circuitUtils';
 import { useSymbols } from '../../../../core/SymbolsContext';
+import { RENDERER } from '../../../../lib/renderer';
 
 interface ResumenTabProps {
   project: Project;
@@ -54,8 +54,45 @@ export function ResumenTab({ project, activeAmbiente }: ResumenTabProps) {
   const totalConexiones = project.conexiones?.length ?? 0;
 
   // Métricas de la hoja activa
-  const tramosCount = activeAmbiente.tramos?.length ?? 0;
-  const segCount = activeAmbiente.tramos?.reduce((sum: number, t: import('../../../../types/index').Tramo) => sum + (t.paredes?.length ?? 0), 0) ?? 0;
+  const paredCount = activeAmbiente.paredes?.length ?? 0;
+  
+  let areaPisoM2 = 0;
+  let areaParedesM2 = 0;
+  
+  try {
+    const { allSegs } = RENDERER.buildSegs(activeAmbiente, project);
+
+    // Calcular área del piso (fórmula del polígono de Shoelace)
+    if (allSegs.length > 2) {
+      const pts = allSegs.map(s => s.inicio);
+      let areaPx = 0;
+      for (let i = 0; i < pts.length; i++) {
+        const p1 = pts[i];
+        const p2 = pts[(i + 1) % pts.length];
+        areaPx += (p1[0] * p2[1]) - (p2[0] * p1[1]);
+      }
+      const areaPx2 = Math.abs(areaPx) / 2;
+      areaPisoM2 = areaPx2 * Math.pow((project.escala || 50) / 1000, 2);
+    }
+
+    // Calcular área de paredes (largo * altura)
+    let totalParedM = 0;
+    allSegs.forEach(s => {
+      totalParedM += Math.hypot(s.fin[0] - s.inicio[0], s.fin[1] - s.inicio[1]) * ((project.escala || 50) / 1000);
+    });
+    
+    const altura = activeAmbiente.alturaLocal || project.alturaDefault || 2.6;
+    let areaAberturas = 0;
+    (activeAmbiente.aberturas || []).forEach(ab => {
+      const h = ab.tipo === 'puerta' ? 2.05 : 1.2;
+      areaAberturas += ab.ancho * h;
+    });
+    
+    areaParedesM2 = Math.max(0, (totalParedM * altura) - areaAberturas);
+  } catch (e) {
+    console.error("Error calculando areas", e);
+  }
+
   const elecCount = activeAmbiente.elementos?.filter(el => isBocaElectrica(el, symbolsLib)).length ?? 0;
   const abertCount = activeAmbiente.aberturas?.length ?? 0;
 
@@ -121,8 +158,9 @@ export function ResumenTab({ project, activeAmbiente }: ResumenTabProps) {
             gap: 8,
           }}
         >
-          <StatCard icon="🧱" value={tramosCount} label="Tramos" />
-          <StatCard icon="━" value={segCount} label="Segmentos" />
+          <StatCard icon="🧱" value={paredCount} label="Paredes" />
+          <StatCard icon="📏" value={`${areaPisoM2.toFixed(1)} m²`} label="Sup. Piso" />
+          <StatCard icon="🏢" value={`${areaParedesM2.toFixed(1)} m²`} label="Sup. Paredes" />
           <StatCard icon="⚡" value={elecCount} label="Bocas" accent />
           <StatCard icon="🚪" value={abertCount} label="Aberturas" />
         </div>
@@ -137,58 +175,7 @@ export function ResumenTab({ project, activeAmbiente }: ResumenTabProps) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button 
             className="btn btn-acc" 
-            onClick={() => {
-              // 1. Markdown
-              exportToMarkdown(project);
-
-              // 2. Bocas CSV
-              const dataBocas = project.ambientes.flatMap(a => 
-                a.elementos.map(el => {
-                  const circ = project.circuitos?.find(c => c.id === el.circuitoId);
-                  const circName = circ ? getFullCircuitName(circ, project.tableros || []) : 'N/A';
-                  return {
-                    Hoja: a.nombre,
-                    Referencia: el.referencia || 'S/R',
-                    Tipo: el.tipo,
-                    Altura: el.altura || 0,
-                    Circuito: circName
-                  };
-                })
-              );
-              exportToCSV(dataBocas, `${project.nombre.replace(/ /g, '_')}_Bocas.csv`);
-
-              // 3. Circuitos CSV
-              const dataCirc = (project.circuitos || []).map(c => {
-                let bocasCount = 0;
-                project.ambientes.forEach(a => {
-                  bocasCount += a.elementos.filter(el => isBocaElectrica(el, symbolsLib) && (el.circuitoId === c.id || c.id === el.datos.find(d=>d.clave==='circuitoId')?.valor)).length;
-                });
-
-                let longitudSum = 0;
-                let longitudEstimada = false;
-                (project.conexiones || []).forEach(cx => {
-                  if (cx.circuitoId === c.id || (cx.circuitosIds || []).includes(c.id)) {
-                    if (cx.origenLongitud === 'declarada' && cx.seccionConduccion) {
-                      longitudSum += cx.seccionConduccion;
-                    } else {
-                      const auto = calcularLongitudOrtogonal(project, cx.from.ambienteId, cx.from.elementoId, cx.to.ambienteId, cx.to.elementoId);
-                      if (auto !== null) {
-                        longitudSum += auto;
-                        longitudEstimada = true;
-                      }
-                    }
-                  }
-                });
-
-                return {
-                  Nombre: getFullCircuitName(c, project.tableros || []),
-                  Tipo: c.tipo,
-                  Bocas: bocasCount,
-                  Longitud_m: longitudSum > 0 ? `${longitudSum.toFixed(2)}${longitudEstimada ? ' (estimada)' : ''}` : '0'
-                };
-              });
-              exportToCSV(dataCirc, `${project.nombre.replace(/ /g, '_')}_Circuitos.csv`);
-            }}
+            onClick={() => exportAllProjectData(project)}
           >
             📦 Descargar Paquete de Reportes Completos (CSV + MD)
           </button>

@@ -6,7 +6,16 @@ import { AppHeader } from '../../components/AppHeader'
 import { EditorScreen } from './EditorScreen'
 import { Preview } from './components/Preview'
 import { MasterView } from './components/MasterView'
-import type { Project, EditorTab, SelectedElement } from '../../types/index'
+import { SymbolDialog } from '../../components/SymbolDialog'
+import { 
+  exportToMarkdown, 
+  exportMaterialsToCSV, 
+  exportToCSV, 
+  getCircuitPathsAndDetails, 
+  exportEnvironmentToSVG, 
+  exportAllProjectData 
+} from '../../lib/exporters'
+import type { Project, EditorTab, SelectedElement, SymbolDialogData, Ambiente } from '../../types/index'
 
 const PLANTA_TABS = ['resumen', 'general', 'hoja', 'paredes', 'aberturas', 'maestro', 'cobertura'] as const
 const ELECTRICO_TABS = ['resumen', 'electrico', 'circuitos', 'conexiones'] as const
@@ -38,6 +47,9 @@ export function RelevadorTool() {
   const [mobileEditorVisible, setMobileEditorVisible] = useState(false)
   
   const [selectedElement, setSelectedElement] = useState<SelectedElement>(null)
+  const [symDialog, setSymDialog] = useState<SymbolDialogData | null>(null)
+  const [pendingConnectionStart, setPendingConnectionStart] = useState<string | null>(null)
+  const [showExportModal, setShowExportModal] = useState(false)
 
   useEffect(() => {
     setSelectedElement(null)
@@ -70,6 +82,75 @@ export function RelevadorTool() {
       </button>
     </div>
   )
+
+  const handleCanvasClick = (x: number, y: number, paredIdx?: number, paredPos?: number, clickedElecId?: string, lado?: 'interior' | 'exterior') => {
+    if (editorMode === 'electrico') {
+      if (activeTab === 'conexiones') {
+        if (clickedElecId) {
+          if (!pendingConnectionStart) {
+            setPendingConnectionStart(clickedElecId);
+          } else {
+            if (pendingConnectionStart === clickedElecId) {
+              setPendingConnectionStart(null); // Desmarcar
+              setSelectedElement(null);
+            } else {
+              // Crear conexión
+              const nuevaConexion = {
+                 id: Date.now().toString(),
+                 from: { ambienteId: activeAmbienteId!, elementoId: pendingConnectionStart },
+                 to: { ambienteId: activeAmbienteId!, elementoId: clickedElecId },
+                 cables: [
+                   { tipo: 'fase', seccion: 2.5, color: 'negro' },
+                   { tipo: 'neutro', seccion: 2.5, color: 'celeste' },
+                   { tipo: 'pe', seccion: 2.5, color: 'verde-amarillo' },
+                 ],
+                 conducto: 'PVC 20mm'
+              } as any;
+              updateProject(activeProject!.id, p => ({
+                 ...p,
+                 conexiones: [...(p.conexiones || []), nuevaConexion]
+              }));
+              setPendingConnectionStart(null);
+              setSelectedElement(null);
+            }
+          }
+        } else {
+          // Click en vacío, cancelar conexión pendiente
+          if (pendingConnectionStart) {
+            setPendingConnectionStart(null);
+            setSelectedElement(null);
+          }
+        }
+        return;
+      }
+
+      if (activeTab === 'electrico') {
+        if (clickedElecId) return; // Si clickea en un elemento, Preview ya maneja la selección
+        setSymDialog({ mode: 'create', x, y, snapSegIdx: paredIdx, snapPos: paredPos, snapLado: lado });
+      }
+    }
+  }
+
+  const handleSymConfirm = (nuevo: any) => {
+    if (!activeAmbienteId || !activeProject) return;
+    
+    updateProject(activeProject.id, p => {
+      return {
+        ...p,
+        ambientes: p.ambientes.map(a => {
+          if (a.id !== activeAmbienteId) return a;
+          const elementos = a.elementos || [];
+          if (symDialog?.mode === 'create') {
+            return { ...a, elementos: [...elementos, { ...nuevo, id: Date.now().toString() }] };
+          } else if (symDialog?.mode === 'edit') {
+            return { ...a, elementos: elementos.map(el => el.id === nuevo.id ? nuevo : el) };
+          }
+          return a;
+        })
+      };
+    });
+    setSymDialog(null);
+  }
 
   if (!activeProject) {
     const handleCreateProject = () => {
@@ -129,7 +210,7 @@ export function RelevadorTool() {
         modeSelector={modeSelector}
         onGoHome={() => {}}
         onUndo={() => {}}
-        onShowExport={() => {}}
+        onShowExport={() => setShowExportModal(true)}
       />
 
       <main className="main-content">
@@ -165,7 +246,7 @@ export function RelevadorTool() {
                       onAddAmbiente={() => addAmbiente({ id: Date.now().toString(), nombre: 'Nuevo Ambiente' })}
                       onDeleteAmbiente={deleteAmbiente}
                       onSelectAmbiente={setActiveAmbienteId}
-                      onSymbolDialog={() => {}}
+                      onSymbolDialog={setSymDialog}
                       onShowNetlist={() => {}}
                       globalMeasurements={[]}
                       onNewMeasurementModal={() => {}}
@@ -179,7 +260,7 @@ export function RelevadorTool() {
                       ambiente={activeAmbiente}
                       meta={activeProject}
                       symbolsLib={symbolsLib}
-                      onCanvasClick={() => {}}
+                      onCanvasClick={handleCanvasClick}
                       selectedElement={selectedElement}
                       onSelectElement={setSelectedElement}
                     />
@@ -191,6 +272,25 @@ export function RelevadorTool() {
         </div>
       </main>
 
+      {symDialog && (
+        <SymbolDialog
+          clickData={symDialog}
+          symbolsLib={symbolsLib}
+          escala={activeProject.escala}
+          ambienteAltura={activeAmbiente?.alturaLocal || activeProject.alturaDefault}
+          onConfirm={handleSymConfirm}
+          onCancel={() => setSymDialog(null)}
+        />
+      )}
+
+      {showExportModal && (
+        <ExportModal
+          project={activeProject}
+          ambiente={activeAmbiente || null}
+          onCancel={() => setShowExportModal(false)}
+        />
+      )}
+
       <button
         className="mobile-view-toggle"
         onClick={() => setMobileEditorVisible(!mobileEditorVisible)}
@@ -200,4 +300,153 @@ export function RelevadorTool() {
       </button>
     </div>
   )
+}
+
+interface ExportModalProps {
+  project: Project;
+  ambiente: Ambiente | null;
+  onCancel: () => void;
+}
+
+function ExportModal({ project, ambiente, onCancel }: ExportModalProps) {
+  const [opts, setOpts] = useState({
+    md: true,
+    mat: true,
+    bocas: true,
+    circs: true,
+    svgActive: true,
+    svgAll: false,
+  });
+
+  const handleDownload = () => {
+    if (opts.md) {
+      exportToMarkdown(project);
+    }
+    if (opts.mat) {
+      exportMaterialsToCSV(project);
+    }
+    if (opts.bocas) {
+      const dataBocas = project.ambientes.flatMap(a => 
+        a.elementos.map(el => {
+          const circ = project.circuitos?.find(c => c.id === el.circuitoId);
+          const circName = circ ? circ.nombre : 'N/A';
+          return {
+            Hoja: a.nombre,
+            Referencia: el.referencia || 'S/R',
+            Tipo: el.tipo,
+            Altura: el.altura || 0,
+            Circuito: circName
+          };
+        })
+      );
+      exportToCSV(dataBocas, `${project.nombre.replace(/ /g, '_')}_Bocas.csv`);
+    }
+    if (opts.circs) {
+      const dataCirc = (project.circuitos || []).map(c => {
+        const details = getCircuitPathsAndDetails(project, c.id);
+        return {
+          Nombre: c.nombre,
+          Tipo: c.tipo,
+          Bocas: details.bocasCount,
+          LongitudMax_m: details.longitudMaxima.toFixed(2),
+          BocaMasLejana: details.farthestNodeName
+        };
+      });
+      exportToCSV(dataCirc, `${project.nombre.replace(/ /g, '_')}_Circuitos.csv`);
+    }
+    if (opts.svgActive && ambiente) {
+      exportEnvironmentToSVG(ambiente, project);
+    }
+    if (opts.svgAll) {
+      project.ambientes.forEach(amb => {
+        if (amb.id !== ambiente?.id || !opts.svgActive) {
+          exportEnvironmentToSVG(amb, project);
+        }
+      });
+    }
+    onCancel();
+  };
+
+  const handleAll = () => {
+    exportAllProjectData(project);
+    onCancel();
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.6)',
+      backdropFilter: 'blur(8px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 10000,
+      padding: 16
+    }}>
+      <div className="card" style={{
+        width: '100%',
+        maxWidth: 420,
+        background: 'var(--surface-1)',
+        padding: 20,
+        borderRadius: 16,
+        boxShadow: 'var(--shadow-3)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0, fontSize: 18, color: 'var(--text-h)' }}>📥 Exportar Proyecto</h3>
+          <button className="btn btn-ghost btn-sm" onClick={onCancel} style={{ padding: 4, minWidth: 'auto', border: 'none', background: 'transparent', cursor: 'pointer' }}>✕</button>
+        </div>
+        
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--text-dim)' }}>
+          Seleccioná los informes y planos que querés generar para el proyecto <strong>{project.nombre}</strong>:
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--sans)' }}>
+            <input type="checkbox" checked={opts.md} onChange={e => setOpts({ ...opts, md: e.target.checked })} />
+            <span>📄 Informe Técnico Completo (Markdown)</span>
+          </label>
+          
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--sans)' }}>
+            <input type="checkbox" checked={opts.mat} onChange={e => setOpts({ ...opts, mat: e.target.checked })} />
+            <span>📊 Planilla de Cómputo de Materiales (CSV)</span>
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--sans)' }}>
+            <input type="checkbox" checked={opts.bocas} onChange={e => setOpts({ ...opts, bocas: e.target.checked })} />
+            <span>⚡ Listado de Bocas y Alturas (CSV)</span>
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--sans)' }}>
+            <input type="checkbox" checked={opts.circs} onChange={e => setOpts({ ...opts, circs: e.target.checked })} />
+            <span>🔢 Listado de Circuitos (CSV)</span>
+          </label>
+
+          {ambiente && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--sans)' }}>
+              <input type="checkbox" checked={opts.svgActive} onChange={e => setOpts({ ...opts, svgActive: e.target.checked })} />
+              <span>🗺️ Plano SVG de {ambiente.nombre}</span>
+            </label>
+          )}
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--sans)' }}>
+            <input type="checkbox" checked={opts.svgAll} onChange={e => setOpts({ ...opts, svgAll: e.target.checked })} />
+            <span>🗺️ Planos SVG de Todos los Ambientes</span>
+          </label>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+          <button className="btn btn-acc btn-full" onClick={handleDownload}>
+            Descargar Seleccionados
+          </button>
+          <button className="btn btn-ghost btn-full" onClick={handleAll} style={{ border: '1px solid var(--outline-var)' }}>
+            Descargar Todo (MD + CSVs + SVGs)
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

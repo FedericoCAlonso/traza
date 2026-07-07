@@ -103,7 +103,7 @@ export function render(ambiente: Ambiente, meta: Meta, symbolsLib: DefinicionSim
         // Línea gruesa invisible centrada en el segmento
         const p1 = GEO.add(s.inicio, [dx, dy]);
         const p2 = GEO.add(s.fin, [dx, dy]);
-        out.push(`<line x1="${p1[0]}" y1="${p1[1]}" x2="${p2[0]}" y2="${p2[1]}" stroke="transparent" stroke-width="${s.grosorPx + 10}" cursor="pointer" data-pared-idx="${s.originalIndex}" />`);
+        out.push(`<line x1="${p1[0]}" y1="${p1[1]}" x2="${p2[0]}" y2="${p2[1]}" stroke="black" stroke-opacity="0.01" stroke-width="${s.grosorPx + 10}" cursor="pointer" pointer-events="stroke" data-pared-idx="${s.originalIndex}" />`);
       }
     });
   });
@@ -190,7 +190,7 @@ export function render(ambiente: Ambiente, meta: Meta, symbolsLib: DefinicionSim
       if (seg) {
         const p1 = GEO.add(seg.inicio, [dx, dy]);
         const p2 = GEO.add(seg.fin, [dx, dy]);
-        out.push(`<line x1="${p1[0]}" y1="${p1[1]}" x2="${p2[0]}" y2="${p2[1]}" stroke="var(--acc)" stroke-opacity="0.8" stroke-width="${seg.grosorPx + 14}" stroke-linecap="round" style="animation: highlight-pulse 1.5s infinite" />`);
+        out.push(`<line x1="${p1[0]}" y1="${p1[1]}" x2="${p2[0]}" y2="${p2[1]}" stroke="#FF9800" stroke-opacity="0.8" stroke-width="${seg.grosorPx + 14}" stroke-linecap="round" style="animation: highlight-pulse 1.5s infinite" />`);
       }
     } else if (selectedElement.type === 'abertura') {
       const ab = ambiente.aberturas?.find(a => a.id === selectedElement.id);
