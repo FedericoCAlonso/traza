@@ -14,6 +14,7 @@ import { CircuitsTab } from './components/tabs/CircuitsTab';
 import { ConnectionsTab } from './components/tabs/ConnectionsTab';
 import { CoverageTab } from './components/tabs/CoverageTab';
 import { ResumenTab } from './components/tabs/ResumenTab';
+import { MedicionesTab } from './components/tabs/MedicionesTab';
 
 // Hooks y Lógica
 import { useEditorTab } from '../../core/EditorTabContext';
@@ -42,10 +43,13 @@ interface EditorScreenProps {
   onNewMeasurementModal?: (elementoId: string, moduleType: import('../../types/index').ModuleType) => void;
   selectedElement: SelectedElement;
   onSelectElement: (el: SelectedElement) => void;
+  /** ID de la campaña de medición activa (para el flujo toca-en-plano). */
+  campaniaActivaId: string | null;
+  onSetCampaniaActiva: (id: string | null) => void;
 }
 
 const PLANTA_TABS: EditorTab[] = ['resumen', 'general', 'hoja', 'paredes', 'aberturas', 'escaleras', 'maestro', 'cobertura'];
-const ELECTRICO_TABS: EditorTab[] = ['resumen', 'electrico', 'circuitos', 'conexiones'];
+const ELECTRICO_TABS: EditorTab[] = ['resumen', 'electrico', 'circuitos', 'conexiones', 'mediciones'];
 
 export function EditorScreen(props: EditorScreenProps) {
   const { 
@@ -64,7 +68,9 @@ export function EditorScreen(props: EditorScreenProps) {
     globalMeasurements,
     onNewMeasurementModal,
     selectedElement,
-    onSelectElement
+    onSelectElement,
+    campaniaActivaId,
+    onSetCampaniaActiva,
   } = props;
 
   const { activeTab, setActiveTab } = useEditorTab();
@@ -99,17 +105,18 @@ export function EditorScreen(props: EditorScreenProps) {
   };
 
   const tabConfig: Record<EditorTab, { label: string, icon: string }> = {
-    resumen:    { label: 'Resumen', icon: '📊' },
-    general:    { label: 'General', icon: '📋' },
-    hoja:       { label: 'Hoja',    icon: '🏠' },
-    paredes:    { label: 'Paredes', icon: '🧱' },
-    aberturas:  { label: 'Abert.',  icon: '🚪' },
-    escaleras:  { label: 'Escal.',  icon: '🪜' },
-    electrico:  { label: 'Bocas',   icon: '⚡' },
-    circuitos:  { label: 'Circ.',   icon: '🔌' },
-    conexiones: { label: 'Canal.',  icon: '🔗' },
-    maestro:    { label: 'Maestro', icon: '🗺️' },
-    cobertura:  { label: 'Cobert.', icon: '☂️' }
+    resumen:     { label: 'Resumen',  icon: '📊' },
+    general:     { label: 'General',  icon: '📋' },
+    hoja:        { label: 'Hoja',     icon: '🏠' },
+    paredes:     { label: 'Paredes',  icon: '🧱' },
+    aberturas:   { label: 'Abert.',   icon: '🚪' },
+    escaleras:   { label: 'Escal.',   icon: '🪜' },
+    electrico:   { label: 'Bocas',    icon: '⚡' },
+    circuitos:   { label: 'Circ.',    icon: '🔌' },
+    conexiones:  { label: 'Canal.',   icon: '🔗' },
+    mediciones:  { label: 'Medic.',   icon: '📐' },
+    maestro:     { label: 'Maestro',  icon: '🗺️' },
+    cobertura:   { label: 'Cobert.',  icon: '☂️' }
   };
 
   const visibleTabs = mode === 'planta' ? PLANTA_TABS : ELECTRICO_TABS;
@@ -269,6 +276,14 @@ export function EditorScreen(props: EditorScreenProps) {
           circuitos={state.circuitos}
           conexiones={state.conexiones}
           updateConexiones={state.updateConexiones}
+        />
+      )}
+
+      {mode === 'electrico' && activeTab === 'mediciones' && (
+        <MedicionesTab
+          project={project}
+          campaniaActivaId={campaniaActivaId}
+          onSetCampaniaActiva={onSetCampaniaActiva}
         />
       )}
     </EditorLayout>

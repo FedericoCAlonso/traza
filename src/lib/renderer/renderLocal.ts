@@ -49,7 +49,7 @@ function extremoDentroDeOtroPared(
   return false;
 }
 
-export function render(ambiente: Ambiente, meta: Meta, symbolsLib: DefinicionSimbolo[], exportMode = false, project?: Project, selectedElement?: import('../../types/index').SelectedElement | null): string {
+export function render(ambiente: Ambiente, meta: Meta, symbolsLib: DefinicionSimbolo[], exportMode = false, project?: Project, selectedElement?: import('../../types/index').SelectedElement | null, campaniaActivaId?: string | null): string {
   const { chains, allSegs: segs } = buildSegs(ambiente, meta);
   const { dx, dy, pageW, pageH, margin } = getLayout(ambiente, meta);
   const conf = ambiente.configHoja || { formato: 'A4', orientacion: 'horizontal' };
@@ -142,8 +142,24 @@ export function render(ambiente: Ambiente, meta: Meta, symbolsLib: DefinicionSim
   });
 
   // 7. Elementos Eléctricos
+  const medicionesActivas = campaniaActivaId && project?.medicionesCampania
+    ? project.medicionesCampania.filter(m => m.campaniaId === campaniaActivaId)
+    : [];
+
   ambiente.elementos?.forEach(el => {
-    renderElemento(out, el, segs, meta.escala, dx, dy, exportMode, symbolsLib, ambiente.elementosEstructurales, project?.conexiones);
+    // Indicador de campaña activa: pintar símbolo según estado
+    let colorOverride = undefined;
+    if (campaniaActivaId && !exportMode) {
+      const medicion = medicionesActivas.find(m => {
+        const ref = m.elementoRef;
+        return (ref.tipo === 'boca' || ref.tipo === 'tablero') && ref.elementoId === el.id;
+      });
+      if (medicion) {
+        colorOverride = medicion.aprobado === true ? '#4caf50' : medicion.aprobado === false ? '#f44336' : '#2196f3';
+      }
+    }
+
+    renderElemento(out, el, segs, meta.escala, dx, dy, exportMode, symbolsLib, ambiente.elementosEstructurales, project?.conexiones, colorOverride, conf.escalaSimbolos);
   });
 
   // 8. Textos libres

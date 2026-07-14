@@ -206,7 +206,9 @@ export function renderElemento(
   _exportMode: boolean,
   symbolsLib: DefinicionSimbolo[], 
   columnas?: ElementoEstructural[],
-  conexiones?: any[]
+  conexiones?: any[],
+  colorOverride?: string,
+  escalaSimbolos?: number
 ): void {
   let [ex, ey] = getElementPos(el, segs, escala, dx, dy);
 
@@ -230,10 +232,10 @@ export function renderElemento(
     }
   }
 
-  const k = GEO.mToPx(0.30, escala); // El símbolo representa ~30cm físicos
+  const k = GEO.mToPx(0.30, escalaSimbolos || escala); // El símbolo representa ~30cm físicos
   const symDef = symbolsLib.find(s => s.id === el.tipo);
   
-  out.push(`<g transform="translate(${f(ex)},${f(ey)}) rotate(${f(angRot)})" data-elec-id="${el.id}" style="cursor:pointer" color="${C.ELEC}">`);
+  out.push(`<g transform="translate(${f(ex)},${f(ey)}) rotate(${f(angRot)})" data-elec-id="${el.id}" style="cursor:pointer" color="${colorOverride || C.ELEC}">`);
   
   if (symDef) {
     const scaleFactor = k * symDef.escalaBase;

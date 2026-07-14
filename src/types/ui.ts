@@ -1,4 +1,5 @@
-export type EditorTab = 'resumen' | 'general' | 'hoja' | 'paredes' | 'aberturas' | 'escaleras' | 'electrico' | 'circuitos' | 'conexiones' | 'maestro' | 'cobertura';
+export type EditorTab = 'resumen' | 'general' | 'hoja' | 'paredes' | 'aberturas' | 'escaleras' | 'electrico' | 'circuitos' | 'conexiones' | 'mediciones' | 'maestro' | 'cobertura';
+
 
 export type ScreenView = 'projects' | 'editor';
 

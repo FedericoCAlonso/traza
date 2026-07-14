@@ -191,3 +191,95 @@ export type Measurement =
   | MeasurementCortocircuito
   | MeasurementAislacion
   | MeasurementCalidadPotencia
+
+// ─── CAMPAÑAS DE MEDICIÓN ───
+
+/**
+ * Estado de una campaña de medición.
+ * - `activa`: acepta nuevas mediciones
+ * - `cerrada`: bloqueada, no se pueden agregar mediciones
+ */
+export type EstadoCampania = 'activa' | 'cerrada'
+
+/**
+ * Campaña de medición eléctrica.
+ * Agrupa un conjunto de mediciones del mismo tipo, realizadas con el mismo
+ * instrumento y en el mismo período, por un equipo técnico definido.
+ *
+ * Diseñada para ser compatible con una futura migración a Firebase Firestore
+ * (IDs UUID, timestamps en epoch ms, arrays sin objetos anidados profundos).
+ */
+export interface Campania {
+  /** UUID generado con crypto.randomUUID(). */
+  id: string
+  /** Nombre descriptivo de la campaña (ej: "Continuidad de masas - Julio 2026"). */
+  nombre: string
+  /**
+   * Tipo o norma de referencia del ensayo (campo libre).
+   * Ejemplos: "SRT 900/15", "Resistencia de lazo a tierra", "Verificación de diferenciales".
+   */
+  tipoMedicion: string
+  /** Nombre y modelo del instrumento utilizado (ej: "Fluke 1664 FC"). */
+  instrumento: string
+  /** Número de serie del instrumento (para trazabilidad en el informe). */
+  instrumentoSerie?: string
+  /**
+   * Unidad de medida base para las lecturas de esta campaña.
+   * Puede sobreescribirse por lectura individual. Ejemplos: "Ω", "mA", "ms", "MΩ".
+   */
+  unidad: string
+  /** Lista de nombres de los técnicos participantes (texto libre). */
+  tecnicos: string[]
+  /** Timestamp Unix (ms) de inicio de la campaña. */
+  fechaInicio: number
+  /** Timestamp Unix (ms) de finalización. Opcional hasta que se cierra. */
+  fechaFin?: number
+  estado: EstadoCampania
+  /** Notas adicionales sobre condiciones del ensayo, observaciones generales, etc. */
+  notas?: string
+}
+
+// ─── LECTURAS INDIVIDUALES (dentro de una Medicion) ───
+
+/**
+ * Lectura individual dentro de una medición de campaña.
+ * Una medición puede tener múltiples lecturas (ej: diferencial con varios presets).
+ */
+export interface LecturaMedicion {
+  /** Etiqueta descriptiva de la lectura (ej: "½ΔIn", "ΔIn", "2ΔIn", "THD R", "t disparo"). */
+  etiqueta: string
+  valor: number
+  /** Unidad de esta lectura. Hereda de la campaña si no se especifica. */
+  unidad?: string
+  /** Resultado de evaluación individual de esta lectura. */
+  aprobado?: boolean
+}
+
+/**
+ * Referencia al elemento físico sobre el que se realiza la medición.
+ * Discriminada por `tipo` para permitir narrowing en TypeScript.
+ */
+export type ElementoMedicionRef =
+  | { tipo: 'boca';     ambienteId: string; elementoId: string }
+  | { tipo: 'tablero';  ambienteId: string; elementoId: string }
+  | { tipo: 'tierra';   descripcion: string }
+  | { tipo: 'circuito'; circuitoId: string }
+  | { tipo: 'diferencial'; tableroId: string; diferencialId: string }
+
+/**
+ * Medición registrada en el contexto de una campaña.
+ * Cada medición pertenece a exactamente una campaña y referencia un elemento físico.
+ */
+export interface MedicionCampania {
+  /** UUID generado con crypto.randomUUID(). */
+  id: string
+  campaniaId: string
+  elementoRef: ElementoMedicionRef
+  /** Lista de lecturas del ensayo. Mínimo una, múltiples para ensayos multi-preset. */
+  lecturas: LecturaMedicion[]
+  /** Resultado global de la medición (puede diferir del resultado lectura a lectura). */
+  aprobado?: boolean
+  /** Timestamp Unix (ms) de la medición. Auto-generado, editable por el técnico. */
+  fechaHora: number
+  notas?: string
+}

@@ -25,6 +25,7 @@ interface PreviewProps {
   creationFlow?: { active: boolean; step: string; anchor: any; offsetX: number; offsetY: number };
   selectedElement?: SelectedElement;
   onSelectElement?: (el: SelectedElement) => void;
+  campaniaActivaId?: string | null;
 }
 
 /** Cursor del área del plano según el tab activo */
@@ -37,6 +38,7 @@ const CURSOR_BY_TAB: Record<EditorTab, string> = {
   electrico:  'crosshair',
   circuitos:  'default',
   conexiones: 'default',
+  mediciones: 'default',
   maestro:    'default',
   cobertura:  'default',
   escaleras:  'default',
@@ -52,13 +54,14 @@ const HINT_BY_TAB: Record<EditorTab, string> = {
   electrico: 'Tap: insertar · Arrastre: mover · Pellizco: zoom',
   circuitos: '— Solo lectura —',
   conexiones:'Tap: conectar bocas · Arrastre: mover · Pellizco: zoom',
+  mediciones:'Tap: registrar medición en boca/tablero · Arrastre: mover · Pellizco: zoom',
   maestro:   '— Plano Maestro —',
   cobertura: '— Solo lectura —',
   escaleras: '— Solo lectura —',
 };
 
 /** Tabs que permiten interacción táctil de selección/inserción */
-const INTERACTIVE_TABS: EditorTab[] = ['electrico', 'aberturas', 'paredes', 'circuitos', 'conexiones'];
+const INTERACTIVE_TABS: EditorTab[] = ['electrico', 'aberturas', 'paredes', 'circuitos', 'conexiones', 'mediciones'];
 
 /**
  * Busca el elemento SVG más cercano con el atributo dado,
@@ -82,7 +85,11 @@ function findNearestSVGAttr(cx: number, cy: number, attr: string, radius = 20): 
   return null;
 }
 
-export function Preview({ project, ambiente, meta, symbolsLib, onCanvasClick, creationFlow, selectedElement, onSelectElement }: PreviewProps) {
+export function Preview(props: PreviewProps) {
+  const { 
+    project, ambiente, meta, symbolsLib, onCanvasClick, 
+    creationFlow, selectedElement, onSelectElement, campaniaActivaId 
+  } = props;
   const containerRef = useRef<HTMLDivElement>(null);
   const { zoom, pan, resetZoom, zoomIn, zoomOut, wasTouchDrag } = useZoomPan(containerRef);
   const { activeTab } = useEditorTab();
@@ -111,11 +118,11 @@ export function Preview({ project, ambiente, meta, symbolsLib, onCanvasClick, cr
       if (activeTab === 'maestro') {
         return RENDERER.renderMaster(project, symbolsLib);
       }
-      return RENDERER.render(ambiente, meta, symbolsLib, false, project, selectedElement);
+      return RENDERER.render(ambiente, meta, symbolsLib, false, project, selectedElement, campaniaActivaId);
     } catch (err) {
       return '__ERROR__:' + (err as Error).stack;
     }
-  }, [ambiente, meta, symbolsLib, activeTab, project, selectedElement]);
+  }, [ambiente, meta, symbolsLib, activeTab, project, selectedElement, campaniaActivaId]);
 
   if (svgContent.startsWith('__ERROR__:')) {
     return (

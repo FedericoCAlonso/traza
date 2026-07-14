@@ -13,12 +13,16 @@ import {
   exportToCSV, 
   getCircuitPathsAndDetails, 
   exportEnvironmentToSVG, 
-  exportAllProjectData 
+  exportAllProjectData,
+  exportCampaniaReport,
+  exportCampaniaToCSV
 } from '../../lib/exporters'
 import type { Project, EditorTab, SelectedElement, SymbolDialogData, Ambiente } from '../../types/index'
+import type { MedicionCampania, ElementoMedicionRef } from '../../types/measurements'
+import { MedicionFormModal } from './components/MedicionFormModal'
 
 const PLANTA_TABS = ['resumen', 'general', 'hoja', 'paredes', 'aberturas', 'maestro', 'cobertura'] as const
-const ELECTRICO_TABS = ['resumen', 'electrico', 'circuitos', 'conexiones'] as const
+const ELECTRICO_TABS = ['resumen', 'electrico', 'circuitos', 'conexiones', 'mediciones'] as const
 
 export function RelevadorTool() {
   const [editorMode, setEditorMode] = useState<'planta' | 'electrico'>('planta')
@@ -35,7 +39,8 @@ export function RelevadorTool() {
     addAmbiente,
     deleteAmbiente,
     addProject,
-    selectProject
+    selectProject,
+    addMedicion,
   } = useProjectStore()
 
   let activeProject = projects.find(p => p.id === activeProjectId)
@@ -50,6 +55,11 @@ export function RelevadorTool() {
   const [symDialog, setSymDialog] = useState<SymbolDialogData | null>(null)
   const [pendingConnectionStart, setPendingConnectionStart] = useState<string | null>(null)
   const [showExportModal, setShowExportModal] = useState(false)
+  const [campaniaActivaId, setCampaniaActivaId] = useState<string | null>(null)
+  const [medicionDialog, setMedicionDialog] = useState<{
+    elementoRef: ElementoMedicionRef;
+    elementoLabel: string;
+  } | null>(null)
 
   useEffect(() => {
     setSelectedElement(null)
@@ -128,6 +138,23 @@ export function RelevadorTool() {
         if (clickedElecId) return; // Si clickea en un elemento, Preview ya maneja la selección
         setSymDialog({ mode: 'create', x, y, snapSegIdx: paredIdx, snapPos: paredPos, snapLado: lado });
       }
+    }
+
+    // ─── MODO MEDICIÓN ───
+    if (editorMode === 'electrico' && activeTab === 'mediciones' && campaniaActivaId && clickedElecId) {
+      const campania = activeProject?.campanias?.find(c => c.id === campaniaActivaId)
+      if (!campania) return
+      if (campania.estado === 'cerrada') {
+        alert('Esta campaña está cerrada. Creá una nueva campaña para registrar más mediciones.')
+        return
+      }
+      const el = activeAmbiente?.elementos.find(e => e.id === clickedElecId)
+      const ambNombre = activeAmbiente?.nombre ?? ''
+      const elLabel = el ? `${ambNombre} › ${el.referencia || el.tipo}` : `${ambNombre} › (elemento)`
+      const ref: ElementoMedicionRef = el?.esTablero
+        ? { tipo: 'tablero', ambienteId: activeAmbienteId!, elementoId: clickedElecId }
+        : { tipo: 'boca',    ambienteId: activeAmbienteId!, elementoId: clickedElecId }
+      setMedicionDialog({ elementoRef: ref, elementoLabel: elLabel })
     }
   }
 
@@ -252,6 +279,8 @@ export function RelevadorTool() {
                       onNewMeasurementModal={() => {}}
                       selectedElement={selectedElement}
                       onSelectElement={setSelectedElement}
+                      campaniaActivaId={campaniaActivaId}
+                      onSetCampaniaActiva={setCampaniaActivaId}
                     />
                   </div>
                   <div className="panel-right">
@@ -263,6 +292,7 @@ export function RelevadorTool() {
                       onCanvasClick={handleCanvasClick}
                       selectedElement={selectedElement}
                       onSelectElement={setSelectedElement}
+                      campaniaActivaId={campaniaActivaId}
                     />
                   </div>
                 </>
@@ -283,6 +313,28 @@ export function RelevadorTool() {
         />
       )}
 
+      {medicionDialog && campaniaActivaId && (() => {
+        const campania = activeProject.campanias?.find(c => c.id === campaniaActivaId)
+        if (!campania) return null
+        return (
+          <MedicionFormModal
+            elementoRef={medicionDialog.elementoRef}
+            elementoLabel={medicionDialog.elementoLabel}
+            campania={campania}
+            onConfirm={(data) => {
+              const nueva: MedicionCampania = {
+                ...data,
+                id: crypto.randomUUID(),
+                fechaHora: Date.now(),
+              }
+              addMedicion(activeProject.id, nueva)
+              setMedicionDialog(null)
+            }}
+            onCancel={() => setMedicionDialog(null)}
+          />
+        )
+      })()}
+
       {showExportModal && (
         <ExportModal
           project={activeProject}
@@ -290,6 +342,7 @@ export function RelevadorTool() {
           onCancel={() => setShowExportModal(false)}
         />
       )}
+
 
       <button
         className="mobile-view-toggle"
@@ -314,6 +367,7 @@ function ExportModal({ project, ambiente, onCancel }: ExportModalProps) {
     mat: true,
     bocas: true,
     circs: true,
+    mediciones: true,
     svgActive: true,
     svgAll: false,
   });
@@ -353,6 +407,12 @@ function ExportModal({ project, ambiente, onCancel }: ExportModalProps) {
         };
       });
       exportToCSV(dataCirc, `${project.nombre.replace(/ /g, '_')}_Circuitos.csv`);
+    }
+    if (opts.mediciones && project.campanias) {
+      project.campanias.forEach(c => {
+        exportCampaniaReport(project, c.id);
+        exportCampaniaToCSV(project, c.id);
+      });
     }
     if (opts.svgActive && ambiente) {
       exportEnvironmentToSVG(ambiente, project);
@@ -424,6 +484,13 @@ function ExportModal({ project, ambiente, onCancel }: ExportModalProps) {
             <input type="checkbox" checked={opts.circs} onChange={e => setOpts({ ...opts, circs: e.target.checked })} />
             <span>🔢 Listado de Circuitos (CSV)</span>
           </label>
+
+          {(project.campanias && project.campanias.length > 0) && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--sans)' }}>
+              <input type="checkbox" checked={opts.mediciones} onChange={e => setOpts({ ...opts, mediciones: e.target.checked })} />
+              <span>📐 Reportes de Mediciones (MD y CSV)</span>
+            </label>
+          )}
 
           {ambiente && (
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--sans)' }}>

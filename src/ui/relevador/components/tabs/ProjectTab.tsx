@@ -77,6 +77,15 @@ export const ProjectTab: React.FC<ProjectTabProps> = ({
           </F>
         </div>
         <div className="field-row">
+          <F label="Escala de Símbolos (1:X)">
+            <NumInput
+              value={activeAmbiente.configHoja?.escalaSimbolos ?? project.escala}
+              onChange={(v: number) => onUpdateAmbiente(a => ({ ...a, configHoja: { ...(a.configHoja || { formato: 'A4', orientacion: 'horizontal' }), escalaSimbolos: v } }))}
+              placeholder="Ej. 50"
+            />
+          </F>
+        </div>
+        <div className="field-row">
           <F label="Altura de techo (m)">
             <NumInput
               value={activeAmbiente.alturaLocal ?? (project.alturaDefault ?? 2.6)}

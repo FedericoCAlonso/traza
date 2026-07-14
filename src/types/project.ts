@@ -1,4 +1,5 @@
 import type { UnifilDiagram } from './unifilar'
+import type { Campania, MedicionCampania } from './measurements'
 
 // ─── METADATOS DE PLANO ───
 
@@ -107,7 +108,12 @@ export interface Project {
   tramos: TramoConductor[]
   unifilDiagrams: UnifilDiagram[]
   hojasMaestras: HojaMaestra[]
-  
+
+  /** Campañas de medición eléctrica del proyecto. */
+  campanias: Campania[]
+  /** Mediciones registradas en el contexto de campañas. */
+  medicionesCampania: MedicionCampania[]
+
   /** UIDs de usuarios con acceso compartido de lectura/edición. */
   sharedWith?: string[]
 }
@@ -404,6 +410,7 @@ export interface ElementoEstructural {
 export interface ConfigHoja {
   formato: 'A5' | 'A4' | 'A3' | 'A2' | 'A1' | 'A0'
   orientacion: 'vertical' | 'horizontal'
+  escalaSimbolos?: number
 }
 
 // ─── PARED ───

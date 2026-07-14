@@ -189,6 +189,8 @@ export const createProject = (nombre = 'Nuevo Proyecto'): Project => ({
   tramos: [],
   unifilDiagrams: [],
   hojasMaestras: [],
+  campanias: [],
+  medicionesCampania: [],
 });
 
 /**

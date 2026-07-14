@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import localforage from 'localforage'
 import type { Project, Ambiente } from '../types/index'
+import type { Campania, MedicionCampania } from '../types/measurements'
 
 localforage.config({
   name: 'TrazaApp',
@@ -41,14 +42,16 @@ export function normalizeAmbiente(a: Ambiente): Ambiente {
 export function normalizeProject(p: Project): Project {
   return {
     ...p,
-    ambientes:     (p.ambientes     || []).map(normalizeAmbiente),
-    circuitos:     p.circuitos     || [],
-    tableros:      p.tableros      || [],
-    conexiones:    p.conexiones    || [],
-    diferenciales: p.diferenciales || [],
-    tramos:        p.tramos        || [],
-    unifilDiagrams: p.unifilDiagrams || [],
-    hojasMaestras: p.hojasMaestras || [],
+    ambientes:          (p.ambientes     || []).map(normalizeAmbiente),
+    circuitos:          p.circuitos     || [],
+    tableros:           p.tableros      || [],
+    conexiones:         p.conexiones    || [],
+    diferenciales:      p.diferenciales || [],
+    tramos:             p.tramos        || [],
+    unifilDiagrams:     p.unifilDiagrams || [],
+    hojasMaestras:      p.hojasMaestras || [],
+    campanias:          p.campanias          || [],
+    medicionesCampania: p.medicionesCampania || [],
   }
 }
 
@@ -67,10 +70,21 @@ interface ProjectState {
   updateAmbiente: (fn: (a: Ambiente) => Ambiente) => void
   addAmbiente: (ambiente: Partial<Ambiente> & { id: string; nombre: string }) => void
   deleteAmbiente: (id: string) => void
+
+  // Campañas de medición
+  addCampania: (projectId: string, campania: Campania) => void
+  updateCampania: (projectId: string, campaniaId: string, patch: Partial<Campania>) => void
+  closeCampania: (projectId: string, campaniaId: string) => void
+  deleteCampania: (projectId: string, campaniaId: string) => void
+
+  // Mediciones de campaña
+  addMedicion: (projectId: string, medicion: MedicionCampania) => void
+  deleteMedicion: (projectId: string, medicionId: string) => void
 }
 
 export const useProjectStore = create<ProjectState>()(
   persist(
+
     (set) => ({
       projects: [],
       activeProjectId: null,
@@ -158,7 +172,82 @@ export const useProjectStore = create<ProjectState>()(
           ),
           activeAmbienteId: state.activeAmbienteId === id ? (nextAmbientes[0]?.id || null) : state.activeAmbienteId
         }
-      })
+      }),
+
+      // ─── CAMPAÑAS ───
+
+      addCampania: (projectId, campania) => set((state) => ({
+        projects: state.projects.map(p =>
+          p.id === projectId
+            ? { ...p, updatedAt: Date.now(), campanias: [...(p.campanias || []), campania] }
+            : p
+        )
+      })),
+
+      updateCampania: (projectId, campaniaId, patch) => set((state) => ({
+        projects: state.projects.map(p =>
+          p.id === projectId
+            ? {
+                ...p,
+                updatedAt: Date.now(),
+                campanias: (p.campanias || []).map(c =>
+                  c.id === campaniaId ? { ...c, ...patch } : c
+                )
+              }
+            : p
+        )
+      })),
+
+      closeCampania: (projectId, campaniaId) => set((state) => ({
+        projects: state.projects.map(p =>
+          p.id === projectId
+            ? {
+                ...p,
+                updatedAt: Date.now(),
+                campanias: (p.campanias || []).map(c =>
+                  c.id === campaniaId
+                    ? { ...c, estado: 'cerrada' as const, fechaFin: Date.now() }
+                    : c
+                )
+              }
+            : p
+        )
+      })),
+
+      deleteCampania: (projectId, campaniaId) => set((state) => ({
+        projects: state.projects.map(p =>
+          p.id === projectId
+            ? {
+                ...p,
+                updatedAt: Date.now(),
+                campanias: (p.campanias || []).filter(c => c.id !== campaniaId),
+                medicionesCampania: (p.medicionesCampania || []).filter(m => m.campaniaId !== campaniaId)
+              }
+            : p
+        )
+      })),
+
+      // ─── MEDICIONES DE CAMPAÑA ───
+
+      addMedicion: (projectId, medicion) => set((state) => ({
+        projects: state.projects.map(p =>
+          p.id === projectId
+            ? { ...p, updatedAt: Date.now(), medicionesCampania: [...(p.medicionesCampania || []), medicion] }
+            : p
+        )
+      })),
+
+      deleteMedicion: (projectId, medicionId) => set((state) => ({
+        projects: state.projects.map(p =>
+          p.id === projectId
+            ? {
+                ...p,
+                updatedAt: Date.now(),
+                medicionesCampania: (p.medicionesCampania || []).filter(m => m.id !== medicionId)
+              }
+            : p
+        )
+      })),
     }),
     {
       name: 'traza-storage',

@@ -1,4 +1,5 @@
 import type { Project, Ambiente } from '../types/index';
+import type { MedicionCampania } from '../types/measurements';
 import { calcularLongitudOrtogonal } from './electrical/calculations';
 import { isBocaElectrica } from './circuitUtils';
 import { getDefaultSymbolsSync } from './symbols';
@@ -523,8 +524,108 @@ export function exportAllProjectData(project: Project) {
   // 4. CSV Materiales
   exportMaterialsToCSV(project);
 
-  // 5. SVG para todos los ambientes
+  // 5. Mediciones
+  if (project.campanias && project.campanias.length > 0) {
+    project.campanias.forEach(c => {
+      exportCampaniaReport(project, c.id);
+      exportCampaniaToCSV(project, c.id);
+    });
+  }
+
+  // 6. SVG para todos los ambientes
   project.ambientes.forEach(amb => {
     exportEnvironmentToSVG(amb, project);
   });
+}
+
+// ─── EXPORTACIONES DE MEDICIONES ───
+
+function getElementLabelForExport(m: MedicionCampania, project: Project): string {
+  const ref = m.elementoRef
+  if (ref.tipo === 'boca' || ref.tipo === 'tablero') {
+    const amb = project.ambientes.find(a => a.id === ref.ambienteId)
+    const el  = amb?.elementos.find(e => e.id === ref.elementoId)
+    if (el) return `${amb?.nombre ?? '?'} › ${el.referencia || el.tipo}`
+    return `${amb?.nombre ?? '?'} › (elemento)`
+  }
+  if (ref.tipo === 'tierra')      return `Tierra: ${ref.descripcion}`
+  if (ref.tipo === 'circuito')    return `Circuito: ${ref.circuitoId}`
+  if (ref.tipo === 'diferencial') return `Diferencial (tablero: ${ref.tableroId})`
+  return '(elemento)'
+}
+
+export function exportCampaniaReport(project: Project, campaniaId: string) {
+  const c = project.campanias?.find(x => x.id === campaniaId)
+  if (!c) {
+    alert("Campaña no encontrada.")
+    return
+  }
+  const mediciones = (project.medicionesCampania || []).filter(m => m.campaniaId === campaniaId)
+  
+  let md = `# Reporte de Medición: ${c.nombre}\n\n`
+  md += `**Tipo/Norma:** ${c.tipoMedicion || '-'}\n`
+  md += `**Instrumento:** ${c.instrumento} ${c.instrumentoSerie ? `(S/N: ${c.instrumentoSerie})` : ''}\n`
+  md += `**Fecha Inicio:** ${new Date(c.fechaInicio).toLocaleString()}\n`
+  if (c.fechaFin) md += `**Fecha Fin:** ${new Date(c.fechaFin).toLocaleString()}\n`
+  md += `**Técnicos:** ${c.tecnicos.join(', ') || '-'}\n`
+  if (c.notas) md += `**Notas:** ${c.notas}\n`
+  md += `\n## Resumen\n`
+  const aprob = mediciones.filter(m => m.aprobado === true).length
+  const nAprob = mediciones.filter(m => m.aprobado === false).length
+  md += `- Total Mediciones: ${mediciones.length}\n`
+  md += `- Aprobadas: ${aprob}\n`
+  md += `- No Aprobadas: ${nAprob}\n\n`
+
+  md += `## Detalles de Mediciones\n\n`
+  if (mediciones.length === 0) {
+    md += `*Sin mediciones registradas.*\n`
+  } else {
+    mediciones.forEach(m => {
+      md += `### ${getElementLabelForExport(m, project)}\n`
+      md += `- **Fecha:** ${new Date(m.fechaHora).toLocaleString()}\n`
+      md += `- **Resultado:** ${m.aprobado === true ? '✅ Aprobado' : m.aprobado === false ? '❌ No Aprobado' : '➖ Sin evaluar'}\n`
+      if (m.notas) md += `- **Notas:** ${m.notas}\n`
+      md += `- **Lecturas:**\n`
+      m.lecturas.forEach(l => {
+        const estado = l.aprobado === true ? '✅' : l.aprobado === false ? '❌' : ''
+        md += `  - ${l.etiqueta ? `${l.etiqueta}: ` : ''}${l.valor} ${l.unidad ?? c.unidad} ${estado}\n`
+      })
+      md += `\n`
+    })
+  }
+
+  const filename = `Reporte_${c.nombre.replace(/ /g, '_')}.md`
+  downloadFile(md, filename, 'text/markdown;charset=utf-8;')
+}
+
+export function exportCampaniaToCSV(project: Project, campaniaId: string) {
+  const c = project.campanias?.find(x => x.id === campaniaId)
+  if (!c) {
+    alert("Campaña no encontrada.")
+    return
+  }
+  const mediciones = (project.medicionesCampania || []).filter(m => m.campaniaId === campaniaId)
+  
+  const data: Record<string, any>[] = []
+  mediciones.forEach(m => {
+    const elLabel = getElementLabelForExport(m, project)
+    const fecha = new Date(m.fechaHora).toLocaleString()
+    const globalRes = m.aprobado === true ? 'Aprobado' : m.aprobado === false ? 'No Aprobado' : 'N/A'
+    
+    m.lecturas.forEach((l, idx) => {
+      data.push({
+        'Campaña': c.nombre,
+        'Elemento': elLabel,
+        'Fecha/Hora': fecha,
+        'Lectura Etiqueta': l.etiqueta || `Lectura ${idx+1}`,
+        'Valor': l.valor,
+        'Unidad': l.unidad ?? c.unidad,
+        'Evaluación Lectura': l.aprobado === true ? 'OK' : l.aprobado === false ? 'NOK' : 'N/A',
+        'Resultado Global': globalRes,
+        'Notas': m.notas || ''
+      })
+    })
+  })
+
+  exportToCSV(data, `Mediciones_${c.nombre.replace(/ /g, '_')}.csv`)
 }
