@@ -7,6 +7,22 @@ import { normalizeProject } from '../store/useProjectStore';
 export const getUserProjectsRef = (userId: string) => collection(db, 'users', userId, 'projects');
 export const getProjectDoc = (userId: string, projectId: string) => doc(db, 'users', userId, 'projects', projectId);
 
+// Elimina todas las propiedades 'undefined' de un objeto de forma recursiva
+// porque Firestore no soporta valores undefined, solo null.
+function removeUndefined(obj: any): any {
+  if (obj === undefined) return null;
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(removeUndefined);
+  
+  const newObj: any = {};
+  for (const key of Object.keys(obj)) {
+    if (obj[key] !== undefined) {
+      newObj[key] = removeUndefined(obj[key]);
+    }
+  }
+  return newObj;
+}
+
 /**
  * Suscribe a los cambios de proyectos de un usuario y llama al callback con la lista actualizada.
  */
@@ -28,8 +44,9 @@ export function subscribeToProjects(userId: string, onUpdate: (projects: Project
  */
 export async function saveProject(userId: string, project: Project) {
   const ref = getProjectDoc(userId, project.id);
-  // Guardamos todo el objeto completo (en producción podríamos usar updateDoc para campos específicos y ahorrar ancho de banda, pero para empezar setDoc está perfecto)
-  await setDoc(ref, project);
+  const cleanProject = removeUndefined(project);
+  // Guardamos todo el objeto completo
+  await setDoc(ref, cleanProject);
 }
 
 /**
