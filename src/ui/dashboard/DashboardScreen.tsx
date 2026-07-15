@@ -39,8 +39,8 @@ export function DashboardScreen() {
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', fontFamily: 'var(--sans)', color: 'var(--text)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ margin: 0, fontSize: '24px', color: 'var(--text-h)' }}>📁 Mis Proyectos (Traza)</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <h1 style={{ margin: 0, fontSize: '24px', color: 'var(--text-h)' }}>📁 Mis Proyectos</h1>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {user && (
@@ -50,13 +50,13 @@ export function DashboardScreen() {
               <button className="btn btn-ghost btn-sm" onClick={logout} style={{ marginLeft: 8 }}>Salir</button>
             </div>
           )}
-          <button className="btn btn-acc" onClick={handleCreateProject} style={{ padding: '8px 16px', fontSize: 14 }}>
+          <button className="btn btn-acc" onClick={handleCreateProject} style={{ padding: '8px 16px', fontSize: 14, flex: '1 1 auto' }}>
             + Nuevo Proyecto
           </button>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '1.5rem' }}>
         {projects.length === 0 ? (
           <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: 'var(--text-dim)', background: 'var(--surface-1)', borderRadius: 8 }}>
             No hay proyectos. ¡Crea uno nuevo para empezar!
