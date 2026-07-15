@@ -91,6 +91,18 @@ export interface Project {
    * - TN-S/C/C-S: neutro y conductor de protección (separados, combinados o mixtos)
    */
   sistemaDistribucion?: 'TT' | 'IT' | 'TN-S' | 'TN-C' | 'TN-C-S'
+  // Datos del cliente y ubicación (planos para facilitar sync en Firebase)
+  clienteNombre?: string
+  clienteTelefono?: string
+  clienteEmail?: string
+  clienteCuit?: string
+  localizacionDireccion?: string
+  localizacionCiudad?: string
+  localizacionProvincia?: string
+  localizacionCoordenadas?: string
+  descripcion?: string
+  tipoInstalacion?: string
+
   inmueble: Inmueble
   suministro: Suministro
 

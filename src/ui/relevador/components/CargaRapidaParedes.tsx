@@ -1,6 +1,7 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import type { Ambiente, Pared } from '../../../types/index';
 import { createPared } from '../../../lib/storage';
+import { useBluetoothLaser } from '../../../hooks/useBluetoothLaser';
 
 interface CargaRapidaParedesProps {
   ambiente: Ambiente;
@@ -17,6 +18,22 @@ export function CargaRapidaParedes({
   
   const largoRefs = useRef<(HTMLInputElement | null)[]>([]);
   const anguloRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const [activeWallIndex, setActiveWallIndex] = useState<number>(0);
+  const { connect, isConnected, deviceInfo, lastMeasurement, clearMeasurement } = useBluetoothLaser();
+
+  useEffect(() => {
+    if (lastMeasurement !== null && activeWallIndex < paredes.length) {
+      handleParedChange(activeWallIndex, 'largo', lastMeasurement.toString());
+      
+      setTimeout(() => {
+        anguloRefs.current[activeWallIndex]?.focus();
+        anguloRefs.current[activeWallIndex]?.select();
+      }, 50);
+      
+      clearMeasurement();
+    }
+  }, [lastMeasurement, activeWallIndex, paredes.length]);
 
   useEffect(() => {
     if (wallsCount > 0) {
@@ -97,6 +114,17 @@ export function CargaRapidaParedes({
 
   return (
     <div className="carga-rapida">
+      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button 
+          className={`btn btn-sm ${isConnected ? 'btn-ghost' : 'btn-acc'}`} 
+          onClick={connect}
+          title="Permite medir con un distanciómetro láser Bosch GLM"
+        >
+          🔵 {isConnected ? 'Láser Conectado' : 'Conectar Distanciómetro'}
+        </button>
+        {isConnected && <span style={{ fontSize: 12, color: 'var(--primary)' }}>({deviceInfo}) - Medí para cargar el largo en la pared actual.</span>}
+      </div>
+
       <div className="carga-header" style={{ gridTemplateColumns: '30px 1fr 1fr 1fr 1fr 30px' }}>
         <span className="idx">#</span>
         <span className="label">Largo (m)</span>
@@ -119,6 +147,7 @@ export function CargaRapidaParedes({
               value={p.largo === 0 ? '' : p.largo}
               onChange={e => handleParedChange(i, 'largo', e.target.value)}
               onKeyDown={e => handleKeyDown(e, i, 'largo')}
+              onFocus={() => setActiveWallIndex(i)}
               placeholder="0.00"
               aria-label={`Largo pared ${i + 1}`}
             />

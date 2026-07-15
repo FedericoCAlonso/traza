@@ -3,6 +3,7 @@ import { WallCard } from '../WallCard';
 import { CargaRapidaParedes } from '../CargaRapidaParedes';
 import { createPared } from '../../../../lib/storage';
 import { type Ambiente, type Pared } from '../../../../types/index';
+import { exportParedesToCSV, importParedesFromCSV } from '../../../../lib/paredesCsv';
 
 interface WallsTabProps {
   activeAmbiente: Ambiente;
@@ -61,6 +62,47 @@ export const WallsTab: React.FC<WallsTabProps> = React.memo(({
   // (simple heurístico: la última pared tiene largo 'auto')
   const isClosed = paredes.length > 0 && paredes[paredes.length - 1].largo === 'auto';
 
+  const handleExportCSV = () => {
+    const csvStr = exportParedesToCSV(paredes);
+    const blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'paredes.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = (e: any) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target?.result as string;
+        if (text) {
+          const nuevasParedes = importParedesFromCSV(text, 0.15); // Default grosor 15cm
+          if (nuevasParedes.length > 0) {
+            if (confirm(`Se van a importar ${nuevasParedes.length} paredes, reemplazando las actuales. ¿Continuar?`)) {
+              onUpdateAmbiente(a => ({
+                ...a,
+                paredes: nuevasParedes
+              }));
+            }
+          } else {
+            alert('No se encontraron paredes válidas en el CSV.');
+          }
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
   return (
     <div className="paredes-editor">
       {/* Estado del ambiente */}
@@ -88,6 +130,15 @@ export const WallsTab: React.FC<WallsTabProps> = React.memo(({
           onClick={() => setFastMode(true)}
         >
           ⚡ Carga Rápida
+        </button>
+      </div>
+
+      <div style={{ padding: '0 8px 12px 8px', display: 'flex', gap: '8px' }}>
+        <button className="btn btn-sm btn-ghost" style={{ flex: 1, fontSize: '11px' }} onClick={handleImportCSV}>
+          📥 Importar CSV
+        </button>
+        <button className="btn btn-sm btn-ghost" style={{ flex: 1, fontSize: '11px' }} onClick={handleExportCSV}>
+          📤 Exportar CSV
         </button>
       </div>
 
