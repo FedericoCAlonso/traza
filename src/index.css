@@ -6,9 +6,113 @@
    elevación por color, máximo "breathing room".
 ═══════════════════════════════════════════════════════ */
 :root {
-  /* Paleta base */
-  --seed:           #9B8FFF;      /* Color semilla */
-  --primary:        #CBC4FF;      /* Primary */
+  /* Paleta base Light (Material 3) */
+  --seed:           #5243C2;      /* Color semilla */
+  --primary:        #5243C2;      /* Primary Light */
+  --on-primary:     #FFFFFF;
+  --primary-container:  #E3DFFF;
+  --on-primary-container: #12005A;
+
+  --secondary:      #605B71;
+  --on-secondary:   #FFFFFF;
+  --secondary-container: #E6DFF9;
+  --on-secondary-container: #1D192B;
+
+  --tertiary:       #7D5260;
+  --on-tertiary:    #FFFFFF;
+
+  --error:          #BA1A1A;
+  --on-error:       #FFFFFF;
+  --error-container: #FFDAD6;
+
+  --success:        #2E7D32;
+  --warning:        #ED6C02;
+
+  /* Superficies Light */
+  --surface:        #FDFCFF;   /* Surface base */
+  --surface-dim:    #DED8E1;
+  --surface-bright: #FDFCFF;
+  --surface-1:      #F5F2F7;
+  --surface-2:      #EFEBF1;
+  --surface-3:      #EAE5EC;
+  --surface-4:      #E8E2EA;
+  --surface-5:      #E3DDE5;
+
+  /* M3 Surface Container Roles Light */
+  --surface-container-lowest:  #FFFFFF;
+  --surface-container-low:     #F7F2FA;
+  --surface-container:         #F1ECF4;
+  --surface-container-high:    #EBE6EE;
+  --surface-container-highest: #E5E0E8;
+
+  --on-surface:     #1C1B1F;
+  --on-surface-var: #48454E;
+  --outline:        rgba(0,0,0,0.12);
+  --outline-var:    rgba(0,0,0,0.06);
+
+  /* Aliases funcionales Light */
+  --bg:          var(--surface);
+  --bg2:         var(--surface-1);
+  --bg3:         var(--surface-2);
+  --bg-elevated: var(--surface-3);
+
+  --text:        var(--on-surface-var);
+  --text-h:      var(--on-surface);
+  --text2:       #2B2930;
+  --text3:       #5E5B66;
+  --text-dim:    #79747E;
+
+  --border:      var(--outline-var);
+  --border2:     var(--outline);
+
+  --acc:         var(--primary);
+  --acc2:        var(--primary-container);
+  --acc-bg:      rgba(82,67,194,0.08);
+  --acc-border:  rgba(82,67,194,0.25);
+
+  --accent:        var(--acc);
+  --accent-bg:     var(--acc-bg);
+  --accent-border: var(--acc-border);
+
+  --red:     var(--error);
+  --green:   var(--success);
+  --orange:  var(--warning);
+  --blue:    #1976D2;
+
+  /* Forma – Material 3 usa corners generosos */
+  --r-xs:  6px;
+  --r-sm:  10px;
+  --r:     14px;
+  --r-lg:  20px;
+  --r-xl:  28px;
+  --r-full: 999px;
+
+  /* Elevación como shadow sutil */
+  --shadow-1: 0 1px 2px rgba(0,0,0,0.08), 0 1px 3px 1px rgba(0,0,0,0.05);
+  --shadow-2: 0 1px 2px rgba(0,0,0,0.1), 0 2px 6px 2px rgba(0,0,0,0.08);
+  --shadow-3: 0 4px 8px 3px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12);
+  --shadow:   var(--shadow-2);
+
+  /* Tipografía */
+  --sans:    'Inter', system-ui, -apple-system, sans-serif;
+  --heading: var(--sans);
+  --mono:    ui-monospace, 'JetBrains Mono', Consolas, monospace;
+
+  /* Espaciado */
+  --topbar-h: 60px;
+  --panel-w:  370px;
+
+  color-scheme: light;
+}
+
+/* ═══════════════════════════════════════════════════════
+   DARK THEME (Material 3 Dark)
+═══════════════════════════════════════════════════════ */
+html.dark,
+:root.dark,
+.dark {
+  --seed:           #9B8FFF;
+  --primary:        #CBC4FF;      /* Primary Dark */
   --on-primary:     #2D2593;
   --primary-container:  #433B7B;
   --on-primary-container: #E3DFFF;
@@ -28,17 +132,17 @@
   --success:        #86EFAC;
   --warning:        #FDE68A;
 
-  /* Superficies – Elevation through tone */
+  /* Superficies Dark */
   --surface:        #141218;   /* Surface base */
   --surface-dim:    #141218;
   --surface-bright: #2B2930;
-  --surface-1:      #1E1C24;   /* +5% primary overlay */
-  --surface-2:      #231F2B;   /* +8% */
-  --surface-3:      #282433;   /* +11% */
-  --surface-4:      #29253B;   /* +12% */
-  --surface-5:      #2D2840;   /* +14% */
+  --surface-1:      #1E1C24;
+  --surface-2:      #231F2B;
+  --surface-3:      #282433;
+  --surface-4:      #29253B;
+  --surface-5:      #2D2840;
 
-  /* M3 Surface Container Roles */
+  /* M3 Surface Container Roles Dark */
   --surface-container-lowest:  #0F0D13;
   --surface-container-low:     #1D1B20;
   --surface-container:         #211F26;
@@ -50,7 +154,7 @@
   --outline:        rgba(255,255,255,0.12);
   --outline-var:    rgba(255,255,255,0.06);
 
-  /* Aliases funcionales */
+  /* Aliases funcionales Dark */
   --bg:          var(--surface);
   --bg2:         var(--surface-1);
   --bg3:         var(--surface-2);
@@ -79,28 +183,10 @@
   --orange:  var(--warning);
   --blue:    #93CAFF;
 
-  /* Forma – Material 3 usa corners muy generosos */
-  --r-xs:  6px;
-  --r-sm:  10px;
-  --r:     14px;
-  --r-lg:  20px;
-  --r-xl:  28px;
-  --r-full: 999px;
-
-  /* Elevación como shadow sutil */
   --shadow-1: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
   --shadow-2: 0 1px 2px rgba(0,0,0,0.3), 0 2px 6px 2px rgba(0,0,0,0.15);
   --shadow-3: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3);
   --shadow:   var(--shadow-2);
-
-  /* Tipografía */
-  --sans:    'Inter', system-ui, -apple-system, sans-serif;
-  --heading: var(--sans);
-  --mono:    ui-monospace, 'JetBrains Mono', Consolas, monospace;
-
-  /* Espaciado */
-  --topbar-h: 60px;
-  --panel-w:  370px;
 
   color-scheme: dark;
 }

@@ -1,5 +1,6 @@
 export type EditorTab = 'resumen' | 'general' | 'hoja' | 'paredes' | 'aberturas' | 'escaleras' | 'electrico' | 'circuitos' | 'conexiones' | 'mediciones' | 'maestro' | 'cobertura';
 
+export type ThemeMode = 'system' | 'light' | 'dark';
 
 export type ScreenView = 'projects' | 'editor';
 

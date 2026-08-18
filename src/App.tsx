@@ -5,10 +5,12 @@ import { DashboardScreen } from './ui/dashboard/DashboardScreen'
 import { AuthProvider, useAuth } from './core/AuthContext'
 import { LoginScreen } from './ui/auth/LoginScreen'
 import { subscribeToProjects } from './lib/firestore'
+import { useTheme } from './hooks/useTheme'
 import { useEffect } from 'react'
 import './index.css'
 
 function AppContent() {
+  useTheme(); // Inicializa y aplica modo de color (Light, Dark o Sistema)
   const { user, loading } = useAuth();
   const activeProjectId = useProjectStore(state => state.activeProjectId);
   const setProjects = useProjectStore(state => state.setProjects);

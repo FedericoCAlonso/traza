@@ -63,6 +63,40 @@ export const saveProjects = (projects: Project[]): void => {
   }
 };
 
+/**
+ * Exporta una copia de seguridad completa en archivo JSON de los proyectos actuales.
+ */
+export const exportBackupJSON = (projects: Project[], filename = `traza_backup_${new Date().toISOString().slice(0, 10)}.json`): void => {
+  const payload = {
+    version: 2,
+    app: 'traza',
+    exportDate: new Date().toISOString(),
+    projects
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+/**
+ * Parsea un archivo de backup JSON y retorna los proyectos validados.
+ */
+export const parseBackupJSON = async (file: File): Promise<Project[]> => {
+  const text = await file.text();
+  const parsed = JSON.parse(text);
+  if (Array.isArray(parsed)) {
+    return parsed;
+  }
+  if (parsed && Array.isArray(parsed.projects)) {
+    return parsed.projects;
+  }
+  throw new Error('El archivo seleccionado no contiene un formato de backup de Traza válido');
+};
+
 // ─── FÁBRICAS BÁSICAS ───
 
 /**

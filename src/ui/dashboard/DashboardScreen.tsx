@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
-import { createProject } from '../../lib/storage';
+import { createProject, exportBackupJSON, parseBackupJSON } from '../../lib/storage';
 import { exportAllProjectData } from '../../lib/exporters';
 import { useAuth } from '../../core/AuthContext';
+import { useTheme } from '../../hooks/useTheme';
 import { Modal } from '../Modal';
 import { F } from '../Field';
 import type { Project } from '../../types/index';
@@ -18,13 +19,29 @@ import {
   User as UserIcon, 
   MapPin, 
   Layers, 
-  Calendar 
+  Calendar,
+  Sun,
+  Moon,
+  Monitor,
+  Upload,
+  HardDrive
 } from 'lucide-react';
 
 export function DashboardScreen() {
   const { user, logout } = useAuth();
-  const { projects, addProject, selectProject, deleteProject, updateProject, duplicateProject } = useProjectStore();
+  const { themeMode, toggleTheme } = useTheme();
+  const { 
+    projects, 
+    addProject, 
+    selectProject, 
+    deleteProject, 
+    updateProject, 
+    duplicateProject,
+    importProjects 
+  } = useProjectStore();
+
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleCreateProject = () => {
     const newProj = createProject('Nuevo Proyecto');
@@ -44,17 +61,49 @@ export function DashboardScreen() {
     }
   };
 
+  const handleBackupExport = () => {
+    exportBackupJSON(projects);
+  };
+
+  const handleBackupImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const imported = await parseBackupJSON(file);
+      if (confirm(`Se importarán ${imported.length} proyecto(s). ¿Continuar?`)) {
+        importProjects(imported);
+      }
+    } catch (err: any) {
+      alert(`Error al importar backup: ${err.message}`);
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const formatDate = (ms: number) => new Date(ms).toLocaleDateString();
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', fontFamily: 'var(--sans)', color: 'var(--on-surface)' }}>
+      {/* Hidden file input for JSON restore */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileInputChange}
+        accept=".json,application/json"
+        style={{ display: 'none' }}
+      />
+
       {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div
             style={{
-              width: '40px',
-              height: '40px',
+              width: '44px',
+              height: '44px',
               borderRadius: 'var(--r-sm)',
               background: 'var(--primary-container)',
               color: 'var(--on-primary-container)',
@@ -63,19 +112,52 @@ export function DashboardScreen() {
               justifyContent: 'center',
             }}
           >
-            <FolderKanban size={24} />
+            <FolderKanban size={26} />
           </div>
           <div>
             <h1 className="m3-headline-small" style={{ margin: 0, color: 'var(--on-surface)' }}>
               Mis Proyectos
             </h1>
             <p className="m3-label-medium" style={{ margin: 0, color: 'var(--on-surface-var)' }}>
-              {projects.length} proyecto{projects.length === 1 ? '' : 's'} en total
+              {projects.length} proyecto{projects.length === 1 ? '' : 's'} · Almacenamiento local y sincronización en la nube
             </p>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Theme switcher */}
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={toggleTheme}
+            title={`Tema actual: ${themeMode === 'system' ? 'Sistema' : themeMode === 'dark' ? 'Oscuro' : 'Claro'} (Clic para alternar)`}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            {themeMode === 'system' && <Monitor size={16} />}
+            {themeMode === 'dark' && <Moon size={16} />}
+            {themeMode === 'light' && <Sun size={16} />}
+            <span className="hide-mobile">{themeMode === 'system' ? 'Sistema' : themeMode === 'dark' ? 'Oscuro' : 'Claro'}</span>
+          </button>
+
+          {/* Backup buttons */}
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={handleBackupExport}
+            title="Descargar copia de seguridad JSON"
+          >
+            <Download size={16} />
+            <span className="hide-mobile">Backup</span>
+          </button>
+
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={handleBackupImportClick}
+            title="Restaurar backup JSON"
+          >
+            <Upload size={16} />
+            <span className="hide-mobile">Restaurar</span>
+          </button>
+
+          {/* User profile / Logout */}
           {user && (
             <div
               style={{
@@ -83,26 +165,26 @@ export function DashboardScreen() {
                 alignItems: 'center',
                 gap: '8px',
                 background: 'var(--surface-container)',
-                padding: '6px 14px 6px 8px',
+                padding: '4px 12px 4px 6px',
                 borderRadius: 'var(--r-full)',
                 border: '1px solid var(--outline-var)',
               }}
             >
               {user.photoURL ? (
-                <img src={user.photoURL} alt="Avatar" style={{ width: 28, height: 28, borderRadius: '50%' }} />
+                <img src={user.photoURL} alt="Avatar" style={{ width: 26, height: 26, borderRadius: '50%' }} />
               ) : (
-                <UserIcon size={18} style={{ color: 'var(--primary)' }} />
+                <UserIcon size={16} style={{ color: 'var(--primary)' }} />
               )}
-              <span className="m3-label-large" style={{ color: 'var(--on-surface)' }}>
+              <span className="m3-label-large" style={{ color: 'var(--on-surface)', fontSize: 13 }}>
                 {user.displayName || user.email}
               </span>
               <button
                 className="btn btn-ghost btn-xs btn-icon"
                 onClick={logout}
                 title="Cerrar sesión"
-                style={{ width: '28px', height: '28px', marginLeft: 4 }}
+                style={{ width: '26px', height: '26px' }}
               >
-                <LogOut size={14} />
+                <LogOut size={13} />
               </button>
             </div>
           )}
@@ -127,17 +209,23 @@ export function DashboardScreen() {
               padding: '4rem 2rem',
             }}
           >
-            <FolderKanban size={48} style={{ opacity: 0.5, color: 'var(--primary)' }} />
+            <HardDrive size={48} style={{ opacity: 0.5, color: 'var(--primary)' }} />
             <div className="m3-title-medium" style={{ color: 'var(--on-surface)' }}>
               No hay proyectos guardados
             </div>
-            <div className="m3-body-small" style={{ color: 'var(--on-surface-var)', textAlign: 'center', maxWidth: 400 }}>
-              Creá un nuevo proyecto para comenzar a relevar ambientes, trazar muros y diagramar circuitos eléctricos.
+            <div className="m3-body-small" style={{ color: 'var(--on-surface-var)', textAlign: 'center', maxWidth: 420 }}>
+              Creá un nuevo proyecto o restaurá un archivo de backup JSON para comenzar a relevar ambientes y circuitos.
             </div>
-            <button className="btn btn-acc" onClick={handleCreateProject} style={{ marginTop: '8px' }}>
-              <Plus size={18} />
-              <span>Crear mi primer proyecto</span>
-            </button>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+              <button className="btn btn-acc" onClick={handleCreateProject}>
+                <Plus size={18} />
+                <span>Crear Proyecto</span>
+              </button>
+              <button className="btn btn-ghost" onClick={handleBackupImportClick}>
+                <Upload size={16} />
+                <span>Restaurar Backup</span>
+              </button>
+            </div>
           </div>
         ) : (
           projects.map((p) => (

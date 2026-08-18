@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Project } from '../types/index';
-import { RotateCcw, Download, X, ChevronRight } from 'lucide-react';
+import { RotateCcw, Download, X, ChevronRight, Sun, Moon, Monitor } from 'lucide-react';
+import { useTheme } from '../hooks/useTheme';
 
 interface AppHeaderProps {
   screen: 'projects' | 'editor';
@@ -23,6 +24,8 @@ export function AppHeader({
   onUndo,
   onShowExport
 }: AppHeaderProps) {
+  const { themeMode, toggleTheme } = useTheme();
+
   return (
     <header className="topbar">
       <span className="topbar-logo" onClick={onGoHome} title="Ir al Dashboard">
@@ -47,28 +50,40 @@ export function AppHeader({
 
       <span className="topbar-sep" />
 
-      {screen === 'editor' && (
-        <div className="topbar-actions">
-          <button 
-            className={`btn-topbar ${!canUndo ? 'disabled' : ''}`} 
-            onClick={onUndo} 
-            disabled={!canUndo} 
-            title="Deshacer (Undo)"
-          >
-            <RotateCcw size={18} />
-          </button>
-          
-          <button className="btn btn-acc btn-sm" onClick={onShowExport} title="Exportar planos e informes">
-            <Download size={16} />
-            <span className="hide-mobile">Exportar</span>
-          </button>
+      <div className="topbar-actions">
+        <button
+          className="btn-topbar"
+          onClick={toggleTheme}
+          title={`Tema actual: ${themeMode === 'system' ? 'Sistema' : themeMode === 'dark' ? 'Oscuro' : 'Claro'} (Clic para cambiar)`}
+        >
+          {themeMode === 'system' && <Monitor size={18} />}
+          {themeMode === 'dark' && <Moon size={18} />}
+          {themeMode === 'light' && <Sun size={18} />}
+        </button>
 
-          <button className="btn btn-ghost btn-sm" onClick={onGoHome} title="Cerrar y volver a proyectos">
-            <X size={16} />
-            <span className="hide-mobile">Cerrar</span>
-          </button>
-        </div>
-      )}
+        {screen === 'editor' && (
+          <>
+            <button 
+              className={`btn-topbar ${!canUndo ? 'disabled' : ''}`} 
+              onClick={onUndo} 
+              disabled={!canUndo} 
+              title="Deshacer (Undo)"
+            >
+              <RotateCcw size={18} />
+            </button>
+            
+            <button className="btn btn-acc btn-sm" onClick={onShowExport} title="Exportar planos e informes">
+              <Download size={16} />
+              <span className="hide-mobile">Exportar</span>
+            </button>
+
+            <button className="btn btn-ghost btn-sm" onClick={onGoHome} title="Cerrar y volver a proyectos">
+              <X size={16} />
+              <span className="hide-mobile">Cerrar</span>
+            </button>
+          </>
+        )}
+      </div>
     </header>
   );
 }

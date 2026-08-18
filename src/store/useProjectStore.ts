@@ -3,6 +3,7 @@ import type { Project, Ambiente } from '../types/index'
 import type { Campania, MedicionCampania } from '../types/measurements'
 import { auth } from '../lib/firebase'
 import { saveProject, removeProject } from '../lib/firestore'
+import { loadProjects, saveProjects } from '../lib/storage'
 
 /**
  * Garantiza que todos los arrays opcionales de un Ambiente siempre existan.
@@ -48,6 +49,7 @@ interface ProjectState {
   updateProject: (id: string, fn: (p: Project) => Project) => void
   deleteProject: (id: string) => void
   duplicateProject: (id: string) => void
+  importProjects: (imported: Project[]) => void
   
   setActiveAmbienteId: (id: string | null) => void
   updateAmbiente: (fn: (a: Ambiente) => Ambiente) => void
@@ -79,21 +81,27 @@ const removeFromFirebase = (projectId: string) => {
   }
 };
 
+// Carga inicial local (Offline-first)
+const initialLocalProjects = loadProjects().map(normalizeProject);
+
 export const useProjectStore = create<ProjectState>()(
   (set) => ({
-    projects: [],
+    projects: initialLocalProjects,
     activeProjectId: null,
     activeAmbienteId: null,
 
     setProjects: (projects) => {
-      // Set projects directly from Firestore snapshot
-      set({ projects: projects.map(normalizeProject) });
+      const normalized = projects.map(normalizeProject);
+      saveProjects(normalized);
+      set({ projects: normalized });
     },
     
     addProject: (project) => set((state) => {
       const p = normalizeProject(project);
+      const nextProjects = [...state.projects, p];
+      saveProjects(nextProjects);
       syncToFirebase(p);
-      return { projects: [...state.projects, p] };
+      return { projects: nextProjects };
     }),
     
     selectProject: (id) => set((state) => {
@@ -116,14 +124,17 @@ export const useProjectStore = create<ProjectState>()(
         }
         return p;
       });
+      saveProjects(projects);
       if (updatedProject) syncToFirebase(updatedProject);
       return { projects };
     }),
 
     deleteProject: (id) => set((state) => {
       removeFromFirebase(id);
+      const nextProjects = state.projects.filter(p => p.id !== id);
+      saveProjects(nextProjects);
       return {
-        projects: state.projects.filter(p => p.id !== id),
+        projects: nextProjects,
         activeProjectId: state.activeProjectId === id ? null : state.activeProjectId,
         activeAmbienteId: state.activeProjectId === id ? null : state.activeAmbienteId
       };
@@ -141,8 +152,24 @@ export const useProjectStore = create<ProjectState>()(
         updatedAt: Date.now(),
       });
 
+      const nextProjects = [...state.projects, duplicated];
+      saveProjects(nextProjects);
       syncToFirebase(duplicated);
-      return { projects: [...state.projects, duplicated] };
+      return { projects: nextProjects };
+    }),
+
+    importProjects: (imported) => set((state) => {
+      const newItems = imported.map(normalizeProject);
+      const newIds = new Set(newItems.map(ni => ni.id));
+      
+      const merged = [
+        ...state.projects.filter(p => !newIds.has(p.id)),
+        ...newItems
+      ];
+      
+      saveProjects(merged);
+      newItems.forEach(p => syncToFirebase(p));
+      return { projects: merged };
     }),
 
     setActiveAmbienteId: (id) => set({ activeAmbienteId: id }),
@@ -163,6 +190,7 @@ export const useProjectStore = create<ProjectState>()(
         return updatedProject;
       });
 
+      saveProjects(projects);
       if (updatedProject) syncToFirebase(updatedProject);
       return { projects };
     }),
@@ -187,6 +215,7 @@ export const useProjectStore = create<ProjectState>()(
         return p;
       });
 
+      saveProjects(projects);
       if (updatedProject) syncToFirebase(updatedProject);
       return { projects, activeAmbienteId: newAmb.id };
     }),
@@ -209,6 +238,7 @@ export const useProjectStore = create<ProjectState>()(
         return p;
       });
 
+      saveProjects(projects);
       if (updatedProject) syncToFirebase(updatedProject);
       return {
         projects,
@@ -227,6 +257,7 @@ export const useProjectStore = create<ProjectState>()(
         }
         return p;
       });
+      saveProjects(projects);
       if (updatedProject) syncToFirebase(updatedProject);
       return { projects };
     }),
@@ -246,6 +277,7 @@ export const useProjectStore = create<ProjectState>()(
         }
         return p;
       });
+      saveProjects(projects);
       if (updatedProject) syncToFirebase(updatedProject);
       return { projects };
     }),
@@ -265,6 +297,7 @@ export const useProjectStore = create<ProjectState>()(
         }
         return p;
       });
+      saveProjects(projects);
       if (updatedProject) syncToFirebase(updatedProject);
       return { projects };
     }),
@@ -283,6 +316,7 @@ export const useProjectStore = create<ProjectState>()(
         }
         return p;
       });
+      saveProjects(projects);
       if (updatedProject) syncToFirebase(updatedProject);
       return { projects };
     }),
@@ -298,6 +332,7 @@ export const useProjectStore = create<ProjectState>()(
         }
         return p;
       });
+      saveProjects(projects);
       if (updatedProject) syncToFirebase(updatedProject);
       return { projects };
     }),
@@ -315,6 +350,7 @@ export const useProjectStore = create<ProjectState>()(
         }
         return p;
       });
+      saveProjects(projects);
       if (updatedProject) syncToFirebase(updatedProject);
       return { projects };
     }),
