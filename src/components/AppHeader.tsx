@@ -44,37 +44,36 @@ export function AppHeader({
 
   return (
     <header className="topbar">
-      {/* Botón explícito de volver al Dashboard */}
-      {screen === 'editor' && (
+      {/* Botón de volver al Dashboard */}
+      {screen === 'editor' ? (
         <button
-          className="btn btn-ghost btn-sm"
+          className="btn btn-ghost btn-xs"
           onClick={onGoHome}
           title="Volver a la lista de proyectos"
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', color: 'var(--on-surface)' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 8px', color: 'var(--on-surface)' }}
         >
-          <ArrowLeft size={18} />
-          <span>Proyectos</span>
+          <ArrowLeft size={15} />
+          <span className="hide-mobile" style={{ fontSize: '12px' }}>Proyectos</span>
         </button>
+      ) : (
+        <span
+          className="topbar-logo"
+          onClick={onGoHome}
+          title="Ir al Inicio"
+        >
+          <Layers size={16} style={{ color: 'var(--primary)' }} />
+          <span>Traza</span>
+        </span>
       )}
 
-      <span
-        className="topbar-logo"
-        onClick={onGoHome}
-        title="Ir al Inicio"
-        style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-      >
-        <Layers size={18} style={{ color: 'var(--primary)' }} />
-        <span>Traza</span>
-      </span>
-
       {screen === 'editor' && activeProject && (
-        <span className="topbar-crumb">
-          <ChevronRight size={14} style={{ opacity: 0.6 }} />
-          <span style={{ maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span className="topbar-crumb" style={{ fontSize: '12px' }}>
+          <ChevronRight size={13} style={{ opacity: 0.5 }} />
+          <span style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>
             {activeProject.nombre || 'Proyecto'}
           </span>
           {activeAmbienteName && (
-            <span style={{ opacity: 0.7, maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ opacity: 0.7, maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               / {activeAmbienteName}
             </span>
           )}
@@ -82,7 +81,7 @@ export function AppHeader({
       )}
 
       {modeSelector && (
-        <span className="topbar-mode-container" style={{ display: 'flex', alignItems: 'center', marginLeft: '8px' }}>
+        <span className="topbar-mode-container">
           {modeSelector}
         </span>
       )}
@@ -90,55 +89,69 @@ export function AppHeader({
       <span className="topbar-sep" />
 
       <div className="topbar-actions">
-        {onOpenSync && (
-          <button
-            className="btn-topbar"
-            onClick={onOpenSync}
-            title="Sincronización en la nube (Offline-First)"
-          >
-            <Cloud size={18} />
-          </button>
-        )}
+        {screen === 'projects' && (
+          <>
+            {onOpenSync && (
+              <button
+                className="btn-topbar"
+                onClick={onOpenSync}
+                title="Sincronización en la nube (Offline-First)"
+              >
+                <Cloud size={16} />
+              </button>
+            )}
 
-        {onOpenConfig && (
-          <button
-            className="btn-topbar"
-            onClick={onOpenConfig}
-            title="Configuración general (Perfil, Drive, Tema)"
-          >
-            <Settings size={18} />
-          </button>
-        )}
+            {onOpenConfig && (
+              <button
+                className="btn-topbar"
+                onClick={onOpenConfig}
+                title="Configuración general (Perfil, Drive, Tema)"
+              >
+                <Settings size={16} />
+              </button>
+            )}
 
-        <button
-          className="btn-topbar"
-          onClick={toggleTheme}
-          title={`Tema: ${themeMode === 'system' ? 'Sistema' : themeMode === 'dark' ? 'Oscuro' : 'Claro'} (Clic para cambiar)`}
-        >
-          {themeMode === 'system' && <Monitor size={18} />}
-          {themeMode === 'dark' && <Moon size={18} />}
-          {themeMode === 'light' && <Sun size={18} />}
-        </button>
+            <button
+              className="btn-topbar"
+              onClick={toggleTheme}
+              title={`Tema: ${themeMode === 'system' ? 'Sistema' : themeMode === 'dark' ? 'Oscuro' : 'Claro'}`}
+            >
+              {themeMode === 'system' && <Monitor size={16} />}
+              {themeMode === 'dark' && <Moon size={16} />}
+              {themeMode === 'light' && <Sun size={16} />}
+            </button>
+          </>
+        )}
 
         {screen === 'editor' && (
           <>
-            <button 
-              className={`btn-topbar ${!canUndo ? 'disabled' : ''}`} 
-              onClick={onUndo} 
-              disabled={!canUndo} 
-              title="Deshacer (Undo)"
-            >
-              <RotateCcw size={18} />
-            </button>
+            {canUndo && (
+              <button 
+                className="btn-topbar" 
+                onClick={onUndo} 
+                title="Deshacer (Undo)"
+              >
+                <RotateCcw size={15} />
+              </button>
+            )}
             
-            <button className="btn btn-acc btn-sm" onClick={onShowExport} title="Exportar planos e informes">
-              <Download size={16} />
-              <span className="hide-mobile">Exportar</span>
+            <button
+              className="btn btn-acc btn-xs"
+              onClick={onShowExport}
+              title="Exportar planos e informes"
+              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', fontSize: '12px' }}
+            >
+              <Download size={14} />
+              <span>Exportar</span>
             </button>
 
-            <button className="btn btn-ghost btn-sm" onClick={onGoHome} title="Cerrar y volver a proyectos">
-              <X size={16} />
-              <span className="hide-mobile">Cerrar</span>
+            <button
+              className="btn btn-ghost btn-xs btn-icon"
+              onClick={onGoHome}
+              title="Cerrar y volver a proyectos"
+              style={{ width: '28px', height: '28px', borderRadius: '50%' }}
+            >
+              <X size={15} />
             </button>
           </>
         )}

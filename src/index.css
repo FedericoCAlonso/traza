@@ -101,9 +101,9 @@
   --heading: var(--sans);
   --mono:    'JetBrains Mono', ui-monospace, Consolas, monospace;
 
-  /* Espaciado */
-  --topbar-h: 60px;
-  --panel-w:  370px;
+  /* Tamaños fijos de layout */
+  --topbar-h: 44px;
+  --panel-w:  360px;
 
   color-scheme: light;
 }
@@ -246,31 +246,34 @@ body {
 }
 
 /* ───────────────────────────────────────────────
-   TOPBAR – Surface container highest
+   TOPBAR – Compact workbench header
 ─────────────────────────────────────────────── */
 .topbar {
   position: relative;
   z-index: 100;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   height: var(--topbar-h);
-  padding: 0 18px;
+  padding: 0 12px;
   flex-shrink: 0;
   background: var(--surface-container);
   border-bottom: 1px solid var(--outline-var);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
 }
 
 .topbar-logo {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.5px;
   color: var(--primary);
   cursor: pointer;
   transition: opacity .2s;
-  padding: 6px 10px;
+  padding: 4px 8px;
   border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .topbar-logo:hover { background: var(--acc-bg); }
 
@@ -286,7 +289,7 @@ body {
 
 .topbar-sep { flex: 1; }
 
-.topbar-actions { display: flex; align-items: center; gap: 6px; }
+.topbar-actions { display: flex; align-items: center; gap: 4px; }
 .topbar-mode-container { display: flex; align-items: center; }
 
 /* Botón de topbar – state layer style */
@@ -294,16 +297,16 @@ body {
   background: none;
   border: none;
   color: var(--text3);
-  font-size: 18px;
+  font-size: 15px;
   cursor: pointer;
-  padding: 8px;
+  padding: 4px;
   border-radius: var(--r-full);
   transition: background 0.2s, color 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
 }
 .btn-topbar:hover:not(:disabled) {
   background: var(--acc-bg);
