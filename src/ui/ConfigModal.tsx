@@ -74,9 +74,9 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
       isOpen={isOpen}
       onClose={onClose}
       title="Configuración de Traza & Suite ieBA"
-      maxWidth="680px"
+      maxWidth="620px"
       footer={
-        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
           <button
             type="button"
             className="btn btn-ghost btn-sm"
@@ -97,11 +97,21 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
       }
     >
       {/* Navigation tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '1px solid var(--outline-var)', paddingBottom: '12px', flexWrap: 'wrap' }}>
+      <div 
+        style={{ 
+          display: 'flex', 
+          gap: '6px', 
+          borderBottom: '1px solid var(--outline-var)', 
+          paddingBottom: '10px', 
+          overflowX: 'auto',
+          scrollbarWidth: 'none'
+        }}
+      >
         <button
           type="button"
           className={`btn btn-sm ${activeTab === 'apariencia' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setActiveTab('apariencia')}
+          style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
         >
           <Sun size={15} />
           <span>Apariencia</span>
@@ -110,6 +120,7 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
           type="button"
           className={`btn btn-sm ${activeTab === 'profesional' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setActiveTab('profesional')}
+          style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
         >
           <User size={15} />
           <span>Perfil & Membrete</span>
@@ -118,6 +129,7 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
           type="button"
           className={`btn btn-sm ${activeTab === 'nube' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setActiveTab('nube')}
+          style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
         >
           <Cloud size={15} />
           <span>Google Drive</span>
@@ -126,6 +138,7 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
           type="button"
           className={`btn btn-sm ${activeTab === 'tecnico' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setActiveTab('tecnico')}
+          style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
         >
           <Ruler size={15} />
           <span>Técnico</span>
@@ -134,11 +147,11 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
 
       {/* Tab 1: Apariencia */}
       {activeTab === 'apariencia' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <p className="m3-body-small" style={{ color: 'var(--on-surface-var)', margin: 0 }}>
             Elegí el esquema de colores para la interfaz de Traza y la Suite ieBA.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
             <button
               type="button"
               onClick={() => setThemeMode('system')}
@@ -148,18 +161,18 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
                 color: themeMode === 'system' ? 'var(--on-primary-container)' : 'var(--on-surface)',
                 border: themeMode === 'system' ? '2px solid var(--primary)' : '1px solid var(--outline-var)',
                 borderRadius: 'var(--r)',
-                padding: '16px',
+                padding: '14px 10px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: '8px',
+                gap: '6px',
                 cursor: 'pointer',
                 textAlign: 'center'
               }}
             >
-              <Monitor size={24} />
+              <Monitor size={22} />
               <strong style={{ fontSize: 13 }}>Sistema</strong>
-              <small style={{ opacity: 0.8, fontSize: 11 }}>Automático según SO</small>
+              <small style={{ opacity: 0.8, fontSize: 11 }}>Según tu SO</small>
             </button>
 
             <button
@@ -171,18 +184,18 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
                 color: themeMode === 'dark' ? 'var(--on-primary-container)' : 'var(--on-surface)',
                 border: themeMode === 'dark' ? '2px solid var(--primary)' : '1px solid var(--outline-var)',
                 borderRadius: 'var(--r)',
-                padding: '16px',
+                padding: '14px 10px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: '8px',
+                gap: '6px',
                 cursor: 'pointer',
                 textAlign: 'center'
               }}
             >
-              <Moon size={24} />
+              <Moon size={22} />
               <strong style={{ fontSize: 13 }}>Oscuro</strong>
-              <small style={{ opacity: 0.8, fontSize: 11 }}>Carbón & Oro ieBA</small>
+              <small style={{ opacity: 0.8, fontSize: 11 }}>Carbón & Oro</small>
             </button>
 
             <button
@@ -194,18 +207,18 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
                 color: themeMode === 'light' ? 'var(--on-primary-container)' : 'var(--on-surface)',
                 border: themeMode === 'light' ? '2px solid var(--primary)' : '1px solid var(--outline-var)',
                 borderRadius: 'var(--r)',
-                padding: '16px',
+                padding: '14px 10px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: '8px',
+                gap: '6px',
                 cursor: 'pointer',
                 textAlign: 'center'
               }}
             >
-              <Sun size={24} />
+              <Sun size={22} />
               <strong style={{ fontSize: 13 }}>Claro</strong>
-              <small style={{ opacity: 0.8, fontSize: 11 }}>Marfil & Oliva Cálido</small>
+              <small style={{ opacity: 0.8, fontSize: 11 }}>Marfil Cálido</small>
             </button>
           </div>
         </div>
@@ -213,17 +226,18 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
 
       {/* Tab 2: Perfil Profesional */}
       {activeTab === 'profesional' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <p className="m3-body-small" style={{ color: 'var(--on-surface-var)', margin: 0 }}>
             Estos datos se incluirán en el rótulo de los planos, membretes de informes técnicos y memorias de cálculo exportadas.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
             <div>
               <F label="Nombre y Apellido / Titular">
                 <input
                   type="text"
                   value={config.profesional.nombre}
                   onChange={(e) => updateProfesional({ nombre: e.target.value })}
+                  placeholder="Ej: Ing. Juan Pérez"
                 />
               </F>
             </div>
@@ -233,6 +247,7 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
                   type="text"
                   value={config.profesional.empresa}
                   onChange={(e) => updateProfesional({ empresa: e.target.value })}
+                  placeholder="Ej: ieBA Instalaciones"
                 />
               </F>
             </div>
@@ -242,6 +257,7 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
                   type="text"
                   value={config.profesional.matricula}
                   onChange={(e) => updateProfesional({ matricula: e.target.value })}
+                  placeholder="Ej: COPIME 12345"
                 />
               </F>
             </div>
@@ -251,6 +267,7 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
                   type="text"
                   value={config.profesional.cuit}
                   onChange={(e) => updateProfesional({ cuit: e.target.value })}
+                  placeholder="Ej: 20-30405060-7"
                 />
               </F>
             </div>
@@ -260,6 +277,7 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
                   type="text"
                   value={config.profesional.telefono}
                   onChange={(e) => updateProfesional({ telefono: e.target.value })}
+                  placeholder="Ej: +54 11 1234-5678"
                 />
               </F>
             </div>
@@ -269,6 +287,7 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
                   type="email"
                   value={config.profesional.email}
                   onChange={(e) => updateProfesional({ email: e.target.value })}
+                  placeholder="contacto@estudio.com"
                 />
               </F>
             </div>
@@ -288,27 +307,27 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
 
       {/* Tab 3: Google Drive & Respaldo */}
       {activeTab === 'nube' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div
             style={{
               background: 'var(--surface-container-high)',
-              padding: '16px',
+              padding: '14px 16px',
               borderRadius: 'var(--r)',
               border: '1px solid var(--outline-var)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '10px'
+              gap: '12px'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Cloud size={24} style={{ color: 'var(--primary)' }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: '180px' }}>
+                <Cloud size={24} style={{ color: 'var(--primary)', flexShrink: 0 }} />
                 <div>
                   <strong className="m3-title-small" style={{ color: 'var(--on-surface)', display: 'block' }}>
                     {driveStatus.label}
                   </strong>
-                  <span className="m3-label-small" style={{ color: 'var(--on-surface-var)' }}>
-                    Archivo maestro: <code>cotizador_ieba_master.json</code>
+                  <span className="m3-label-small" style={{ color: 'var(--on-surface-var)', wordBreak: 'break-all' }}>
+                    Archivo: <code>cotizador_ieba_master.json</code>
                   </span>
                 </div>
               </div>
@@ -331,26 +350,26 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
             </div>
 
             {syncMessage && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--green)', fontSize: 13 }}>
-                <CheckCircle2 size={16} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--green)', fontSize: 13, background: 'rgba(46,125,50,0.1)', padding: '6px 10px', borderRadius: 'var(--r-sm)' }}>
+                <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
                 <span>{syncMessage}</span>
               </div>
             )}
 
             {syncError && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--red)', fontSize: 13 }}>
-                <AlertCircle size={16} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--red)', fontSize: 13, background: 'rgba(211,47,47,0.1)', padding: '6px 10px', borderRadius: 'var(--r-sm)' }}>
+                <AlertCircle size={16} style={{ flexShrink: 0 }} />
                 <span>{syncError}</span>
               </div>
             )}
           </div>
 
-          <div style={{ borderTop: '1px solid var(--outline-var)', paddingTop: '14px' }}>
-            <h4 className="m3-title-small" style={{ margin: '0 0 8px 0', color: 'var(--on-surface)' }}>
+          <div style={{ borderTop: '1px solid var(--outline-var)', paddingTop: '12px' }}>
+            <h4 className="m3-title-small" style={{ margin: '0 0 6px 0', color: 'var(--on-surface)' }}>
               Copia de Seguridad Local
             </h4>
-            <p className="m3-body-small" style={{ color: 'var(--on-surface-var)', margin: '0 0 12px 0' }}>
-              Podés exportar en cualquier momento un archivo JSON con todos tus proyectos, croquis y clientes para guardarlo en tu computadora o pendrive.
+            <p className="m3-body-small" style={{ color: 'var(--on-surface-var)', margin: '0 0 10px 0' }}>
+              Podés descargar en cualquier momento una copia JSON con todos tus relevamientos y clientes.
             </p>
             <button
               type="button"
@@ -366,11 +385,11 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
 
       {/* Tab 4: Parámetros Técnicos */}
       {activeTab === 'tecnico' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <p className="m3-body-small" style={{ color: 'var(--on-surface-var)', margin: 0 }}>
-            Valores por defecto para el dibujo de ambientes y cómputo de materiales.
+            Valores por defecto para el trazado de ambientes y cómputo de materiales.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
             <div>
               <F label="Altura de Pared Default (m)">
                 <input

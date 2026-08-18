@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { X } from 'lucide-react';
 
 interface ModalProps {
   isOpen: boolean;
@@ -10,11 +11,10 @@ interface ModalProps {
 }
 
 /**
- * Modal unificado para toda la aplicación.
- * Usa las clases CSS globales .overlay y .dialog para consistencia visual.
- * Maneja cierre por click en overlay y tecla Escape.
+ * Modal unificado para toda la aplicación con diseño Material 3.
+ * Incluye cabecera fija con botón cerrar, cuerpo desplazable y pie fijo.
  */
-export function Modal({ isOpen, onClose, title, children, footer, maxWidth = '520px' }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, footer, maxWidth = '540px' }: ModalProps) {
   useEffect(() => {
     if (!isOpen) return;
 
@@ -23,7 +23,6 @@ export function Modal({ isOpen, onClose, title, children, footer, maxWidth = '52
     };
 
     document.addEventListener('keydown', handleKey);
-    // Bloquear scroll del body mientras el modal está abierto
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
@@ -39,12 +38,23 @@ export function Modal({ isOpen, onClose, title, children, footer, maxWidth = '52
     <div className="overlay" onClick={onClose}>
       <div
         className="dialog"
-        style={{ maxWidth, width: '90%' }}
+        style={{ maxWidth, width: '100%' }}
         onClick={e => e.stopPropagation()}
       >
-        <div className="dialog-title">{title}</div>
+        <div className="dialog-header">
+          <h3 className="dialog-title">{title}</h3>
+          <button
+            type="button"
+            className="btn btn-ghost btn-xs btn-icon"
+            onClick={onClose}
+            title="Cerrar"
+            style={{ width: '32px', height: '32px', borderRadius: '50%', color: 'var(--on-surface-var)' }}
+          >
+            <X size={18} />
+          </button>
+        </div>
 
-        <div>{children}</div>
+        <div className="dialog-body">{children}</div>
 
         {footer && <div className="dialog-actions">{footer}</div>}
       </div>

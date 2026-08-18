@@ -786,6 +786,82 @@ main.main-content {
 }
 
 /* ───────────────────────────────────────────────
+   MODALS & DIALOGS (Material 3)
+─────────────────────────────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  padding: 16px;
+}
+
+.dialog {
+  background: var(--surface-container-high);
+  border: 1px solid var(--outline-var);
+  border-radius: var(--r-xl);
+  width: 100%;
+  max-width: 540px;
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-4);
+  overflow: hidden;
+  animation: modalEnter 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes modalEnter {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid var(--outline-var);
+  gap: 12px;
+  flex-shrink: 0;
+  background: var(--surface-container-high);
+}
+
+.dialog-title {
+  font-family: var(--sans);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--on-surface);
+  margin: 0;
+}
+
+.dialog-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 14px 24px 18px;
+  border-top: 1px solid var(--outline-var);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  background: var(--surface-container-high);
+}
+
+/* ───────────────────────────────────────────────
    FORMS – Filled inputs (M3)
 ─────────────────────────────────────────────── */
 .field { display: flex; flex-direction: column; gap: 4px; }
@@ -893,47 +969,7 @@ input[type=checkbox] {
   color: var(--text-dim);
 }
 
-/* ───────────────────────────────────────────────
-   DIALOGS & OVERLAYS – M3 Dialog
-─────────────────────────────────────────────── */
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 900;
-  padding: 24px;
-}
-.dialog {
-  background: var(--surface-3);
-  border: none;
-  border-radius: var(--r-xl);
-  padding: 28px;
-  width: 100%;
-  max-width: 480px;
-  max-height: 90vh;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  box-shadow: var(--shadow-3);
-}
-.dialog-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--on-surface);
-  letter-spacing: -0.3px;
-}
-.dialog-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  padding-top: 4px;
-  flex-wrap: wrap;
-}
+
 
 /* Toast / Snackbar */
 .toast {
