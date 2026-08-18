@@ -3,7 +3,7 @@ import type { Project, Ambiente } from '../types/index'
 import type { Campania, MedicionCampania } from '../types/measurements'
 import { auth } from '../lib/firebase'
 import { saveProject, removeProject } from '../lib/firestore'
-import { loadProjects, saveProjects } from '../lib/storage'
+import { loadProjects, saveProjects, recordDeletedProjectId } from '../lib/storage'
 
 /**
  * Garantiza que todos los arrays opcionales de un Ambiente siempre existan.
@@ -134,6 +134,7 @@ export const useProjectStore = create<ProjectState>()(
     deleteProject: (id) => set((state) => {
       removeFromFirebase(id);
       const now = Date.now();
+      recordDeletedProjectId(id, now);
       const nextProjects = state.projects.map(p => {
         if (p.id === id) {
           return { ...p, deleted: true, deletedAt: now, updatedAt: now };

@@ -33,8 +33,42 @@ import type {
 
 /** Clave de localStorage donde se persiste la lista completa de proyectos (versión 2). */
 const KEY = 'ieba_croquis_v2';
+const DELETED_PROJECTS_KEY = 'ieba_deleted_project_ids';
 
 // ─── GESTIÓN DE PERSISTENCIA ───
+
+/**
+ * Obtiene el registro de IDs de proyectos eliminados y sus marcas de tiempo.
+ */
+export const getDeletedProjectIds = (): Map<string, number> => {
+  try {
+    const raw = localStorage.getItem(DELETED_PROJECTS_KEY);
+    if (!raw) return new Map();
+    const obj = JSON.parse(raw);
+    return new Map(
+      Object.entries(obj).map(([k, v]) => [
+        k,
+        typeof v === 'number' ? v : new Date(v as string).getTime()
+      ])
+    );
+  } catch {
+    return new Map();
+  }
+};
+
+/**
+ * Registra un ID de proyecto como eliminado permanentemente para evitar que resucite en sincronizaciones.
+ */
+export const recordDeletedProjectId = (id: string, timestamp = Date.now()): void => {
+  try {
+    const map = getDeletedProjectIds();
+    map.set(String(id), timestamp);
+    const obj = Object.fromEntries(map.entries());
+    localStorage.setItem(DELETED_PROJECTS_KEY, JSON.stringify(obj));
+  } catch (err) {
+    console.error("Error al registrar borrado en STORAGE:", err);
+  }
+};
 
 /**
  * Carga la lista de proyectos desde el LocalStorage.

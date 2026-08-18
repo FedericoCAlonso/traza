@@ -1,9 +1,16 @@
 import type { MasterDatabasePayload, SyncExecutionResult } from './syncTypes';
 import { gdriveProvider } from './GoogleDriveProvider';
-import { loadProjects, saveProjects } from '../lib/storage';
+import { loadProjects, saveProjects, getDeletedProjectIds, recordDeletedProjectId } from '../lib/storage';
 import { loadClients, saveClients } from '../lib/clientStorage';
 import { normalizeProject, useProjectStore } from '../store/useProjectStore';
 import { useClientsStore } from '../store/useClientsStore';
+
+function toTimestamp(val: any): number {
+  if (!val) return 0;
+  if (typeof val === 'number') return val;
+  const parsed = new Date(val).getTime();
+  return isNaN(parsed) ? 0 : parsed;
+}
 
 class DecentralizedSyncEngine {
   private isSyncing = false;
@@ -52,6 +59,7 @@ class DecentralizedSyncEngine {
       const remotePayload = await gdriveProvider.readMasterPayload();
       const localProjects = loadProjects().map(normalizeProject);
       const localClients = loadClients();
+      const deletedProjectIds = getDeletedProjectIds();
 
       // 2. Fusión de Clientes / Contactos (Last-Write-Wins con Soft-Delete)
       const mergedClientsMap = new Map<string, any>();
@@ -87,8 +95,8 @@ class DecentralizedSyncEngine {
         if (!local) {
           mergedClientsMap.set(id, normalizedRemote);
         } else {
-          const localUp = new Date(local.updatedAt || local.createdAt || 0).getTime();
-          const remoteUp = new Date(normalizedRemote.updatedAt || 0).getTime();
+          const localUp = toTimestamp(local.updatedAt || local.createdAt);
+          const remoteUp = toTimestamp(normalizedRemote.updatedAt);
           if (remoteUp >= localUp) {
             const mergedObras = normalizedRemote.obras && normalizedRemote.obras.length > 0 
               ? normalizedRemote.obras 
@@ -102,9 +110,17 @@ class DecentralizedSyncEngine {
       saveClients(consolidatedClients);
       useClientsStore.getState().setClients(consolidatedClients);
 
-      // 3. Fusión de Proyectos CAD de Traza (Last-Write-Wins con Soft-Delete)
+      // 3. Fusión de Proyectos CAD de Traza (Last-Write-Wins con Soft-Delete y Tombstones)
       const mergedProjectsMap = new Map<string, any>();
-      localProjects.forEach(p => mergedProjectsMap.set(String(p.id), p));
+      localProjects.forEach(p => {
+        const id = String(p.id);
+        if (deletedProjectIds.has(id)) {
+          const delTime = deletedProjectIds.get(id)!;
+          mergedProjectsMap.set(id, { ...p, deleted: true, deletedAt: delTime, updatedAt: Math.max(toTimestamp(p.updatedAt), delTime) });
+        } else {
+          mergedProjectsMap.set(id, p);
+        }
+      });
 
       const remoteTrazaProjs: any[] = [];
       if (remotePayload?.trazaProyectos && Array.isArray(remotePayload.trazaProyectos)) {
@@ -122,13 +138,46 @@ class DecentralizedSyncEngine {
         if (!rp || !rp.id) return;
         const id = String(rp.id);
         const normRemote = normalizeProject(rp);
+        const remoteTime = toTimestamp(normRemote.updatedAt || normRemote.createdAt || normRemote.deletedAt);
+
+        // Si fue eliminado localmente (tombstone)
+        if (deletedProjectIds.has(id)) {
+          const delTime = deletedProjectIds.get(id)!;
+          if (delTime >= remoteTime) {
+            normRemote.deleted = true;
+            normRemote.deletedAt = delTime;
+            normRemote.updatedAt = Math.max(remoteTime, delTime);
+            mergedProjectsMap.set(id, normRemote);
+            return;
+          }
+        }
+
         const local = mergedProjectsMap.get(id);
         if (!local) {
+          if (normRemote.deleted) {
+            recordDeletedProjectId(id, remoteTime);
+          }
           mergedProjectsMap.set(id, normRemote);
         } else {
-          const localUp = local.updatedAt || local.createdAt || 0;
-          const remoteUp = normRemote.updatedAt || normRemote.createdAt || 0;
-          if (remoteUp >= localUp) {
+          const localTime = toTimestamp(local.updatedAt || local.createdAt || local.deletedAt);
+
+          if (local.deleted && !normRemote.deleted) {
+            if (localTime >= remoteTime) {
+              local.updatedAt = Math.max(localTime, remoteTime);
+              mergedProjectsMap.set(id, local);
+              return;
+            }
+          }
+
+          if (normRemote.deleted && !local.deleted) {
+            if (remoteTime >= localTime) {
+              recordDeletedProjectId(id, remoteTime);
+              mergedProjectsMap.set(id, normRemote);
+              return;
+            }
+          }
+
+          if (remoteTime >= localTime) {
             mergedProjectsMap.set(id, normRemote);
           }
         }
