@@ -64,16 +64,33 @@ class DecentralizedSyncEngine {
 
       remoteClients.forEach(rc => {
         if (!rc || !rc.id) return;
-        const local = mergedClientsMap.get(rc.id);
+        const razonSocial = rc.razonSocial || rc.nombre || rc.nombreFantasia || 'Sin Nombre';
+        const nombre = rc.nombre || rc.razonSocial || razonSocial;
+        const cuitDni = rc.cuitDni || rc.cuit || (rc as any).dniCuit || '';
+
+        const normalizedRemote: any = {
+          ...rc,
+          id: String(rc.id),
+          razonSocial,
+          nombre,
+          cuitDni,
+          cuit: cuitDni,
+          roles: rc.roles || ['cliente'],
+          obras: Array.isArray(rc.obras) ? rc.obras : []
+        };
+
+        const local = mergedClientsMap.get(String(rc.id));
         if (!local) {
-          mergedClientsMap.set(rc.id, rc);
+          mergedClientsMap.set(String(rc.id), normalizedRemote);
         } else {
           const localUp = new Date(local.updatedAt || local.createdAt || 0).getTime();
           const remoteUp = new Date(rc.updatedAt || rc.createdAt || 0).getTime();
           if (remoteUp >= localUp) {
             // Preservar obras locales si el remoto no las tenía
-            const mergedObras = rc.obras && rc.obras.length > 0 ? rc.obras : (local.obras || []);
-            mergedClientsMap.set(rc.id, { ...local, ...rc, obras: mergedObras });
+            const mergedObras = normalizedRemote.obras && normalizedRemote.obras.length > 0 
+              ? normalizedRemote.obras 
+              : (local.obras || []);
+            mergedClientsMap.set(String(rc.id), { ...local, ...normalizedRemote, obras: mergedObras });
           }
         }
       });

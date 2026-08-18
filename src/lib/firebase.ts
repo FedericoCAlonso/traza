@@ -18,6 +18,7 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope('https://www.googleapis.com/auth/drive.file');
 googleProvider.addScope('https://www.googleapis.com/auth/drive.appdata');
+googleProvider.addScope('https://www.googleapis.com/auth/drive');
 
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({

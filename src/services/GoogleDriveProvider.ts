@@ -95,7 +95,7 @@ export class GoogleDriveProvider {
     if (this.cachedFileId) return this.cachedFileId;
 
     const q = encodeURIComponent(`name = '${DRIVE_FILE_NAME}' and trashed = false`);
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,modifiedTime)`, {
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,modifiedTime)&orderBy=modifiedTime desc&spaces=drive`, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
