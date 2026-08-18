@@ -225,9 +225,6 @@ export function renderElemento(
     const seg = segs[el.paredIdx];
     angRot = GEO.anguloSimboloPared(seg);
     if (el.lado === 'exterior') {
-      const gPx = seg.grosorPx;
-      ex += seg.v_ext[0] * gPx;
-      ey += seg.v_ext[1] * gPx;
       angRot += 180;
     }
   }

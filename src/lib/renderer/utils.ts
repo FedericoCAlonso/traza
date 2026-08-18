@@ -32,6 +32,11 @@ export function getElementPos(el: ElementoElectrico, segs: Segmento[], escala: n
     const xy = GEO.posEnPared(seg, GEO.mToPx(el.paredPos || 0, escala));
     ex = xy[0] + dx;
     ey = xy[1] + dy;
+    // Snap exacto a la cara correspondiente (interior = baseline, exterior = baseline + grosor)
+    if (el.lado === 'exterior') {
+      ex += seg.v_ext[0] * seg.grosorPx;
+      ey += seg.v_ext[1] * seg.grosorPx;
+    }
   }
   return [ex, ey];
 }

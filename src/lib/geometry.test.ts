@@ -98,17 +98,23 @@ describe('geometry - Room/Wall logical builders', () => {
     expect(segs[1].fin[1]).toBeCloseTo(60) // 3m * 20px/m = 60px
   })
 
-  it('should snap coordinates to the closest wall segment', () => {
+  it('should snap coordinates to the closest wall face (interior vs exterior) and never to the axis', () => {
     const closedSegs = [
       { inicio: [0, 0], fin: [100, 0], dir: [1, 0], v_ext: [0, -1], v_int: [0, 1], grosorPx: 10 },
       { inicio: [100, 0], fin: [100, 100], dir: [0, 1], v_ext: [1, 0], v_int: [-1, 0], grosorPx: 10 }
     ] as any[]
 
-    // Point near [50, 2] should snap to segment 0 (which is along Y=0) at pos=50
-    const snapResult = snapAPared(50, 2, closedSegs)
-    expect(snapResult.segIdx).toBe(0)
-    expect(snapResult.pos).toBeCloseTo(50)
-    expect(snapResult.dist).toBeCloseTo(2)
+    // Punto del lado interior: [50, 2] está hacia v_int ([0, 1]) -> snap debe ser cara interior (lado = 'interior')
+    const snapInt = snapAPared(50, 2, closedSegs)
+    expect(snapInt.segIdx).toBe(0)
+    expect(snapInt.pos).toBeCloseTo(50)
+    expect(snapInt.lado).toBe('interior')
+
+    // Punto del lado exterior: [50, -12] está hacia v_ext ([0, -1] * 10 = -10) -> snap debe ser cara exterior (lado = 'exterior')
+    const snapExt = snapAPared(50, -12, closedSegs)
+    expect(snapExt.segIdx).toBe(0)
+    expect(snapExt.pos).toBeCloseTo(50)
+    expect(snapExt.lado).toBe('exterior')
   })
 
   it('should calculate alignment transformations between linked ports', () => {
@@ -144,12 +150,6 @@ describe('geometry - Room/Wall logical builders', () => {
       ]
     } as unknown as Ambiente
 
-    // Alignment logic aligns the midpoints of the ports, and rotates B so its wall points in the opposite direction.
-    // Port A midpoint = 2.5m on X-axis = (2.5, 0)
-    // Port B midpoint = 1.5m on X-axis = (1.5, 0)
-    // Rotation of B should be 180 degrees relative to A
-    // Once B is rotated 180, B's midpoint (1.5, 0) rotated by 180 becomes (-1.5, 0)
-    // The translation (posX, posY) should move B's rotated midpoint to A's midpoint: (2.5, 0) - (-1.5, 0) = (4.0, 0)
     const escala = 50
     const transform = calcularTransformacionEnlace(
       ambA, ambA.aberturas![0],
@@ -162,3 +162,4 @@ describe('geometry - Room/Wall logical builders', () => {
     expect(transform.posY).toBeCloseTo(0.0)
   })
 })
+
