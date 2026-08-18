@@ -1,6 +1,17 @@
 import React from 'react';
 import type { Project } from '../types/index';
-import { RotateCcw, Download, X, ChevronRight, Sun, Moon, Monitor, Settings } from 'lucide-react';
+import { 
+  RotateCcw, 
+  Download, 
+  X, 
+  ChevronRight, 
+  Sun, 
+  Moon, 
+  Monitor, 
+  Settings, 
+  ArrowLeft, 
+  Layers 
+} from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 
 interface AppHeaderProps {
@@ -30,22 +41,45 @@ export function AppHeader({
 
   return (
     <header className="topbar">
-      <span className="topbar-logo" onClick={onGoHome} title="Ir al Dashboard">
-        Traza
+      {/* Botón explícito de volver al Dashboard */}
+      {screen === 'editor' && (
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={onGoHome}
+          title="Volver a la lista de proyectos"
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', color: 'var(--on-surface)' }}
+        >
+          <ArrowLeft size={18} />
+          <span>Proyectos</span>
+        </button>
+      )}
+
+      <span
+        className="topbar-logo"
+        onClick={onGoHome}
+        title="Ir al Inicio"
+        style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+      >
+        <Layers size={18} style={{ color: 'var(--primary)' }} />
+        <span>Traza</span>
       </span>
 
       {screen === 'editor' && activeProject && (
         <span className="topbar-crumb">
           <ChevronRight size={14} style={{ opacity: 0.6 }} />
-          <span>{activeProject.nombre || 'Proyecto'}</span>
+          <span style={{ maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {activeProject.nombre || 'Proyecto'}
+          </span>
           {activeAmbienteName && (
-            <span style={{ opacity: 0.7 }}> / {activeAmbienteName}</span>
+            <span style={{ opacity: 0.7, maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              / {activeAmbienteName}
+            </span>
           )}
         </span>
       )}
 
       {modeSelector && (
-        <span className="topbar-mode-container" style={{ display: 'flex', alignItems: 'center', marginLeft: '12px' }}>
+        <span className="topbar-mode-container" style={{ display: 'flex', alignItems: 'center', marginLeft: '8px' }}>
           {modeSelector}
         </span>
       )}
@@ -66,7 +100,7 @@ export function AppHeader({
         <button
           className="btn-topbar"
           onClick={toggleTheme}
-          title={`Tema actual: ${themeMode === 'system' ? 'Sistema' : themeMode === 'dark' ? 'Oscuro' : 'Claro'} (Clic para cambiar)`}
+          title={`Tema: ${themeMode === 'system' ? 'Sistema' : themeMode === 'dark' ? 'Oscuro' : 'Claro'} (Clic para cambiar)`}
         >
           {themeMode === 'system' && <Monitor size={18} />}
           {themeMode === 'dark' && <Moon size={18} />}

@@ -249,15 +249,17 @@ body {
    TOPBAR – Surface container highest
 ─────────────────────────────────────────────── */
 .topbar {
+  position: relative;
+  z-index: 100;
   display: flex;
   align-items: center;
   gap: 12px;
   height: var(--topbar-h);
-  padding: 0 24px;
+  padding: 0 18px;
   flex-shrink: 0;
-  background: var(--surface-2);
-  /* Sin border-bottom duro, se separa por tono */
+  background: var(--surface-container);
   border-bottom: 1px solid var(--outline-var);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .topbar-logo {
@@ -989,10 +991,13 @@ input[type=checkbox] {
   body { font-size: 15px; }
   input[type=text], input[type=number], select, textarea { font-size: 16px; }
   .topbar {
-    padding: 8px 14px;
+    position: relative;
+    z-index: 100;
+    padding: 6px 12px;
     flex-wrap: wrap;
     height: auto;
-    min-height: 56px;
+    min-height: 52px;
+    gap: 6px;
   }
   .topbar-crumb { display: none; }
   .topbar-mode-container {
