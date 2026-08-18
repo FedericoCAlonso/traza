@@ -10,7 +10,8 @@ import {
   Monitor, 
   Settings, 
   ArrowLeft, 
-  Layers 
+  Layers,
+  Cloud 
 } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 
@@ -24,6 +25,7 @@ interface AppHeaderProps {
   onUndo: () => void;
   onShowExport: () => void;
   onOpenConfig?: () => void;
+  onOpenSync?: () => void;
 }
 
 export function AppHeader({
@@ -35,7 +37,8 @@ export function AppHeader({
   onGoHome,
   onUndo,
   onShowExport,
-  onOpenConfig
+  onOpenConfig,
+  onOpenSync
 }: AppHeaderProps) {
   const { themeMode, toggleTheme } = useTheme();
 
@@ -87,6 +90,16 @@ export function AppHeader({
       <span className="topbar-sep" />
 
       <div className="topbar-actions">
+        {onOpenSync && (
+          <button
+            className="btn-topbar"
+            onClick={onOpenSync}
+            title="Sincronización en la nube (Offline-First)"
+          >
+            <Cloud size={18} />
+          </button>
+        )}
+
         {onOpenConfig && (
           <button
             className="btn-topbar"

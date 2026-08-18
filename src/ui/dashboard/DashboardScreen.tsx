@@ -5,8 +5,8 @@ import { createProject, exportBackupJSON, parseBackupJSON } from '../../lib/stor
 import { exportAllProjectData } from '../../lib/exporters';
 import { useAuth } from '../../core/AuthContext';
 import { useTheme } from '../../hooks/useTheme';
-import { syncEngine } from '../../services/syncEngine';
 import { ConfigModal } from '../ConfigModal';
+import { SyncModal } from '../SyncModal';
 import { Modal } from '../Modal';
 import { F } from '../Field';
 import type { Project } from '../../types/index';
@@ -52,7 +52,7 @@ export function DashboardScreen() {
 
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
-  const [isSyncingDrive, setIsSyncingDrive] = useState(false);
+  const [showSyncModal, setShowSyncModal] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [selectedObraId, setSelectedObraId] = useState<string>('');
   const [newClientName, setNewClientName] = useState('');
@@ -191,18 +191,6 @@ export function DashboardScreen() {
     }
   };
 
-  const handleDriveSync = async () => {
-    setIsSyncingDrive(true);
-    try {
-      const res = await syncEngine.executeDriveSync();
-      alert(res.message);
-    } catch (err: any) {
-      alert(`Error en sincronización con Drive: ${err.message}`);
-    } finally {
-      setIsSyncingDrive(false);
-    }
-  };
-
   const handleSendToCotizador = async (p: Project) => {
     const client = getClientById(p.clienteId);
     const obra = client?.obras?.find(o => o.id === p.obraId);
@@ -254,15 +242,14 @@ export function DashboardScreen() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          {/* Drive sync button */}
+          {/* Cloud sync button */}
           <button
             className="btn btn-ghost btn-sm"
-            onClick={handleDriveSync}
-            disabled={isSyncingDrive}
-            title="Sincronizar con Google Drive (Archivo Maestro)"
+            onClick={() => setShowSyncModal(true)}
+            title="Sincronización Descentralizada (Google Drive, Local, JSON)"
           >
-            <Cloud size={16} className={isSyncingDrive ? 'spin' : ''} />
-            <span className="hide-mobile">{isSyncingDrive ? 'Sincronizando...' : 'Drive'}</span>
+            <Cloud size={16} />
+            <span className="hide-mobile">Sincronización</span>
           </button>
 
           {/* Theme switcher */}
@@ -369,7 +356,7 @@ export function DashboardScreen() {
                 <Plus size={18} />
                 <span>Crear Relevamiento</span>
               </button>
-              <button className="btn btn-ghost" onClick={handleDriveSync}>
+              <button className="btn btn-ghost" onClick={() => setShowSyncModal(true)}>
                 <Cloud size={16} />
                 <span>Sincronizar con Drive</span>
               </button>
@@ -697,6 +684,12 @@ export function DashboardScreen() {
       <ConfigModal
         isOpen={showConfigModal}
         onClose={() => setShowConfigModal(false)}
+      />
+
+      {/* Modal M3 de Sincronización Descentralizada */}
+      <SyncModal
+        isOpen={showSyncModal}
+        onClose={() => setShowSyncModal(false)}
       />
     </div>
   );

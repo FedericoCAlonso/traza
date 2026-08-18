@@ -35,6 +35,7 @@ import {
   Send 
 } from 'lucide-react'
 import { ConfigModal } from '../ConfigModal'
+import { SyncModal } from '../SyncModal'
 import { useClientsStore } from '../../store/useClientsStore'
 import { enviarAlCotizador } from '../../lib/export/cotizadorBridge'
 
@@ -70,6 +71,7 @@ export function RelevadorTool() {
   const [pendingConnectionStart, setPendingConnectionStart] = useState<string | null>(null)
   const [showExportModal, setShowExportModal] = useState(false)
   const [showConfigModal, setShowConfigModal] = useState(false)
+  const [showSyncModal, setShowSyncModal] = useState(false)
   const [campaniaActivaId, setCampaniaActivaId] = useState<string | null>(null)
   const [medicionDialog, setMedicionDialog] = useState<{
     elementoRef: ElementoMedicionRef;
@@ -236,6 +238,7 @@ export function RelevadorTool() {
         onUndo={() => {}}
         onShowExport={() => setShowExportModal(true)}
         onOpenConfig={() => setShowConfigModal(true)}
+        onOpenSync={() => setShowSyncModal(true)}
       />
 
       <main className="main-content">
@@ -345,6 +348,12 @@ export function RelevadorTool() {
       <ConfigModal
         isOpen={showConfigModal}
         onClose={() => setShowConfigModal(false)}
+      />
+
+      {/* Modal M3 de Sincronización Descentralizada */}
+      <SyncModal
+        isOpen={showSyncModal}
+        onClose={() => setShowSyncModal(false)}
       />
 
       <button

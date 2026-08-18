@@ -3,86 +3,89 @@ import { Modal } from './Modal';
 import { F } from './Field';
 import { useAppConfig } from '../hooks/useAppConfig';
 import { useTheme } from '../hooks/useTheme';
-import { gdriveProvider } from '../services/GoogleDriveProvider';
-import { syncEngine } from '../services/syncEngine';
 import { 
   Sun, 
   Moon, 
   Monitor, 
   Cloud, 
+  Folder,
+  Database,
   User, 
   Ruler, 
-  RefreshCw, 
-  CheckCircle2, 
-  AlertCircle,
-  Download,
   RotateCcw
 } from 'lucide-react';
-import { exportBackupJSON } from '../lib/storage';
-import { useProjectStore } from '../store/useProjectStore';
 
 interface ConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type TabType = 'apariencia' | 'profesional' | 'nube' | 'tecnico';
+type ProviderType = 'local_file' | 'google_drive' | 'manual_json';
 
 export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
   const { config, updateProfesional, updateParametrosTecnicos, resetDefaults } = useAppConfig();
   const { themeMode, setThemeMode } = useTheme();
-  const { projects } = useProjectStore();
 
-  const [activeTab, setActiveTab] = useState<TabType>('apariencia');
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncMessage, setSyncMessage] = useState<string | null>(null);
-  const [syncError, setSyncError] = useState<string | null>(null);
+  const [activeProvider, setActiveProvider] = useState<ProviderType>(() => {
+    return (localStorage.getItem('ieba_sync_active_provider') as ProviderType) || 'google_drive';
+  });
+
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('ieba_auto_sync_enabled');
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  const [syncIntervalMinutes, setSyncIntervalMinutes] = useState<number>(() => {
+    const saved = localStorage.getItem('ieba_sync_interval_minutes');
+    return saved ? parseInt(saved, 10) : 5;
+  });
 
   if (!isOpen) return null;
 
-  const driveStatus = gdriveProvider.getStatus();
-
-  const handleDriveConnect = async () => {
-    try {
-      const ok = await gdriveProvider.connect();
-      if (ok) {
-        setSyncMessage('Google Drive conectado exitosamente.');
-      } else {
-        setSyncError('No se pudo conectar a Google Drive.');
-      }
-    } catch (err: any) {
-      setSyncError(err.message);
-    }
+  const handleSelectProvider = (provider: ProviderType) => {
+    setActiveProvider(provider);
+    localStorage.setItem('ieba_sync_active_provider', provider);
   };
 
-  const handleDriveSyncNow = async () => {
-    setIsSyncing(true);
-    setSyncMessage(null);
-    setSyncError(null);
-    try {
-      const result = await syncEngine.executeDriveSync();
-      setSyncMessage(result.message);
-    } catch (err: any) {
-      setSyncError(err.message);
-    } finally {
-      setIsSyncing(false);
-    }
+  const handleToggleAutoSync = (enabled: boolean) => {
+    setAutoSyncEnabled(enabled);
+    localStorage.setItem('ieba_auto_sync_enabled', String(enabled));
+  };
+
+  const handleChangeInterval = (minutes: number) => {
+    setSyncIntervalMinutes(minutes);
+    localStorage.setItem('ieba_sync_interval_minutes', String(minutes));
+  };
+
+  const sectionTitleStyle: React.CSSProperties = {
+    fontSize: '11px',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    color: 'var(--on-surface-var)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    margin: '0 0 10px 0'
   };
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Configuración de Traza & Suite ieBA"
-      maxWidth="620px"
+      title="Configuración General de Traza"
+      maxWidth="680px"
       footer={
         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
           <button
             type="button"
             className="btn btn-ghost btn-sm"
             onClick={() => {
-              if (confirm('¿Restablecer configuración a valores por defecto?')) {
+              if (confirm('¿Restablecer toda la configuración a los valores originales por defecto?')) {
                 resetDefaults();
+                handleSelectProvider('google_drive');
+                handleToggleAutoSync(true);
+                handleChangeInterval(5);
               }
             }}
             title="Restablecer valores originales"
@@ -96,72 +99,25 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
         </div>
       }
     >
-      {/* Navigation tabs */}
-      <div 
-        style={{ 
-          display: 'flex', 
-          gap: '6px', 
-          borderBottom: '1px solid var(--outline-var)', 
-          paddingBottom: '10px', 
-          overflowX: 'auto',
-          scrollbarWidth: 'none'
-        }}
-      >
-        <button
-          type="button"
-          className={`btn btn-sm ${activeTab === 'apariencia' ? 'btn-primary' : 'btn-ghost'}`}
-          onClick={() => setActiveTab('apariencia')}
-          style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
-        >
-          <Sun size={15} />
-          <span>Apariencia</span>
-        </button>
-        <button
-          type="button"
-          className={`btn btn-sm ${activeTab === 'profesional' ? 'btn-primary' : 'btn-ghost'}`}
-          onClick={() => setActiveTab('profesional')}
-          style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
-        >
-          <User size={15} />
-          <span>Perfil & Membrete</span>
-        </button>
-        <button
-          type="button"
-          className={`btn btn-sm ${activeTab === 'nube' ? 'btn-primary' : 'btn-ghost'}`}
-          onClick={() => setActiveTab('nube')}
-          style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
-        >
-          <Cloud size={15} />
-          <span>Google Drive</span>
-        </button>
-        <button
-          type="button"
-          className={`btn btn-sm ${activeTab === 'tecnico' ? 'btn-primary' : 'btn-ghost'}`}
-          onClick={() => setActiveTab('tecnico')}
-          style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
-        >
-          <Ruler size={15} />
-          <span>Técnico</span>
-        </button>
-      </div>
-
-      {/* Tab 1: Apariencia */}
-      {activeTab === 'apariencia' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <p className="m3-body-small" style={{ color: 'var(--on-surface-var)', margin: 0 }}>
-            Elegí el esquema de colores para la interfaz de Traza y la Suite ieBA.
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        
+        {/* 1. Apariencia */}
+        <div>
+          <h4 style={sectionTitleStyle}>
+            <Sun size={14} style={{ color: 'var(--primary)' }} />
+            <span>Apariencia de la Aplicación</span>
+          </h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
             <button
               type="button"
               onClick={() => setThemeMode('system')}
               className="card"
               style={{
-                background: themeMode === 'system' ? 'var(--primary-container)' : 'var(--surface-container-high)',
+                background: themeMode === 'system' ? 'var(--primary-container)' : 'var(--surface-container-highest)',
                 color: themeMode === 'system' ? 'var(--on-primary-container)' : 'var(--on-surface)',
                 border: themeMode === 'system' ? '2px solid var(--primary)' : '1px solid var(--outline-var)',
                 borderRadius: 'var(--r)',
-                padding: '14px 10px',
+                padding: '12px 10px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -170,8 +126,8 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
                 textAlign: 'center'
               }}
             >
-              <Monitor size={22} />
-              <strong style={{ fontSize: 13 }}>Sistema</strong>
+              <Monitor size={20} />
+              <strong style={{ fontSize: 13 }}>Automático (Sistema)</strong>
               <small style={{ opacity: 0.8, fontSize: 11 }}>Según tu SO</small>
             </button>
 
@@ -180,11 +136,11 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
               onClick={() => setThemeMode('dark')}
               className="card"
               style={{
-                background: themeMode === 'dark' ? 'var(--primary-container)' : 'var(--surface-container-high)',
+                background: themeMode === 'dark' ? 'var(--primary-container)' : 'var(--surface-container-highest)',
                 color: themeMode === 'dark' ? 'var(--on-primary-container)' : 'var(--on-surface)',
                 border: themeMode === 'dark' ? '2px solid var(--primary)' : '1px solid var(--outline-var)',
                 borderRadius: 'var(--r)',
-                padding: '14px 10px',
+                padding: '12px 10px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -193,8 +149,8 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
                 textAlign: 'center'
               }}
             >
-              <Moon size={22} />
-              <strong style={{ fontSize: 13 }}>Oscuro</strong>
+              <Moon size={20} />
+              <strong style={{ fontSize: 13 }}>Modo Oscuro</strong>
               <small style={{ opacity: 0.8, fontSize: 11 }}>Carbón & Oro</small>
             </button>
 
@@ -203,11 +159,11 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
               onClick={() => setThemeMode('light')}
               className="card"
               style={{
-                background: themeMode === 'light' ? 'var(--primary-container)' : 'var(--surface-container-high)',
+                background: themeMode === 'light' ? 'var(--primary-container)' : 'var(--surface-container-highest)',
                 color: themeMode === 'light' ? 'var(--on-primary-container)' : 'var(--on-surface)',
                 border: themeMode === 'light' ? '2px solid var(--primary)' : '1px solid var(--outline-var)',
                 borderRadius: 'var(--r)',
-                padding: '14px 10px',
+                padding: '12px 10px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -216,21 +172,142 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
                 textAlign: 'center'
               }}
             >
-              <Sun size={22} />
-              <strong style={{ fontSize: 13 }}>Claro</strong>
+              <Sun size={20} />
+              <strong style={{ fontSize: 13 }}>Modo Claro</strong>
               <small style={{ opacity: 0.8, fontSize: 11 }}>Marfil Cálido</small>
             </button>
           </div>
         </div>
-      )}
 
-      {/* Tab 2: Perfil Profesional */}
-      {activeTab === 'profesional' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <p className="m3-body-small" style={{ color: 'var(--on-surface-var)', margin: 0 }}>
-            Estos datos se incluirán en el rótulo de los planos, membretes de informes técnicos y memorias de cálculo exportadas.
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+        <hr style={{ border: 'none', borderTop: '1px solid var(--outline-var)', margin: 0 }} />
+
+        {/* 2. Sincronización Descentralizada & Frecuencia */}
+        <div>
+          <h4 style={sectionTitleStyle}>
+            <Cloud size={14} style={{ color: 'var(--primary)' }} />
+            <span>Sincronización Descentralizada & Frecuencia</span>
+          </h4>
+
+          <div
+            style={{
+              padding: '14px 16px',
+              borderRadius: 'var(--r)',
+              background: 'var(--surface-container-highest)',
+              border: '1px solid var(--outline-var)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }}
+          >
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => handleSelectProvider('local_file')}
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: 'var(--r)',
+                  border: activeProvider === 'local_file' ? '2px solid var(--primary)' : '1px solid var(--outline-var)',
+                  background: activeProvider === 'local_file' ? 'var(--primary-container)' : 'var(--surface-container-high)',
+                  color: activeProvider === 'local_file' ? 'var(--on-primary-container)' : 'var(--on-surface)',
+                  textAlign: 'left',
+                  cursor: 'pointer'
+                }}
+              >
+                <strong style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Folder size={14} /> 📁 Carpeta Local
+                </strong>
+                <p style={{ margin: '4px 0 0 0', fontSize: 10, opacity: 0.8 }}>
+                  Disco local, Dropbox, Drive Sync o pendrive.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectProvider('google_drive')}
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: 'var(--r)',
+                  border: activeProvider === 'google_drive' ? '2px solid var(--primary)' : '1px solid var(--outline-var)',
+                  background: activeProvider === 'google_drive' ? 'var(--primary-container)' : 'var(--surface-container-high)',
+                  color: activeProvider === 'google_drive' ? 'var(--on-primary-container)' : 'var(--on-surface)',
+                  textAlign: 'left',
+                  cursor: 'pointer'
+                }}
+              >
+                <strong style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Cloud size={14} /> ☁️ Google Drive
+                </strong>
+                <p style={{ margin: '4px 0 0 0', fontSize: 10, opacity: 0.8 }}>
+                  Sincronización en tu espacio de Google.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectProvider('manual_json')}
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: 'var(--r)',
+                  border: activeProvider === 'manual_json' ? '2px solid var(--primary)' : '1px solid var(--outline-var)',
+                  background: activeProvider === 'manual_json' ? 'var(--primary-container)' : 'var(--surface-container-high)',
+                  color: activeProvider === 'manual_json' ? 'var(--on-primary-container)' : 'var(--on-surface)',
+                  textAlign: 'left',
+                  cursor: 'pointer'
+                }}
+              >
+                <strong style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Database size={14} /> 💾 Respaldo JSON
+                </strong>
+                <p style={{ margin: '4px 0 0 0', fontSize: 10, opacity: 0.8 }}>
+                  Descarga y restauración manual.
+                </p>
+              </button>
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--outline-var)', paddingTop: '10px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
+                  <input
+                    type="checkbox"
+                    checked={autoSyncEnabled}
+                    onChange={(e) => handleToggleAutoSync(e.target.checked)}
+                  />
+                  <span>Sincronización Automática</span>
+                </label>
+                <p style={{ margin: '2px 0 0 24px', fontSize: '10px', color: 'var(--on-surface-var)' }}>
+                  Fusiona cambios en segundo plano periódicamente.
+                </p>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--on-surface-var)', marginBottom: '4px' }}>
+                  Intervalo de Fusión
+                </label>
+                <select
+                  value={syncIntervalMinutes}
+                  onChange={(e) => handleChangeInterval(parseInt(e.target.value, 10) || 5)}
+                  disabled={!autoSyncEnabled}
+                >
+                  <option value={1}>Cada 1 minuto (Tiempo real)</option>
+                  <option value={3}>Cada 3 minutos</option>
+                  <option value={5}>Cada 5 minutos (Recomendado)</option>
+                  <option value={10}>Cada 10 minutos</option>
+                  <option value={15}>Cada 15 minutos</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr style={{ border: 'none', borderTop: '1px solid var(--outline-var)', margin: 0 }} />
+
+        {/* 3. Datos de la Empresa / Electricista */}
+        <div>
+          <h4 style={sectionTitleStyle}>
+            <User size={14} style={{ color: 'var(--primary)' }} />
+            <span>Datos del Profesional / Empresa</span>
+          </h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
             <div>
               <F label="Nombre y Apellido / Titular">
                 <input
@@ -242,7 +319,7 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
               </F>
             </div>
             <div>
-              <F label="Empresa / Estudio">
+              <F label="Empresa / Especialidad">
                 <input
                   type="text"
                   value={config.profesional.empresa}
@@ -272,7 +349,7 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
               </F>
             </div>
             <div>
-              <F label="Teléfono de Contacto">
+              <F label="Teléfono / WhatsApp">
                 <input
                   type="text"
                   value={config.profesional.telefono}
@@ -292,7 +369,7 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
               </F>
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
-              <F label="Leyenda Legal / Membrete de Pie">
+              <F label="Leyenda Legal / Membrete de Pie de Plano">
                 <input
                   type="text"
                   value={config.profesional.leyendaMembrete || ''}
@@ -303,93 +380,16 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
             </div>
           </div>
         </div>
-      )}
 
-      {/* Tab 3: Google Drive & Respaldo */}
-      {activeTab === 'nube' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div
-            style={{
-              background: 'var(--surface-container-high)',
-              padding: '14px 16px',
-              borderRadius: 'var(--r)',
-              border: '1px solid var(--outline-var)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: '180px' }}>
-                <Cloud size={24} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                <div>
-                  <strong className="m3-title-small" style={{ color: 'var(--on-surface)', display: 'block' }}>
-                    {driveStatus.label}
-                  </strong>
-                  <span className="m3-label-small" style={{ color: 'var(--on-surface-var)', wordBreak: 'break-all' }}>
-                    Archivo: <code>cotizador_ieba_master.json</code>
-                  </span>
-                </div>
-              </div>
+        <hr style={{ border: 'none', borderTop: '1px solid var(--outline-var)', margin: 0 }} />
 
-              {!driveStatus.isConfigured ? (
-                <button type="button" className="btn btn-primary btn-sm" onClick={handleDriveConnect}>
-                  Conectar Drive
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="btn btn-acc btn-sm"
-                  onClick={handleDriveSyncNow}
-                  disabled={isSyncing}
-                >
-                  <RefreshCw size={14} className={isSyncing ? 'spin' : ''} />
-                  <span>{isSyncing ? 'Sincronizando...' : 'Sincronizar Ahora'}</span>
-                </button>
-              )}
-            </div>
-
-            {syncMessage && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--green)', fontSize: 13, background: 'rgba(46,125,50,0.1)', padding: '6px 10px', borderRadius: 'var(--r-sm)' }}>
-                <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
-                <span>{syncMessage}</span>
-              </div>
-            )}
-
-            {syncError && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--red)', fontSize: 13, background: 'rgba(211,47,47,0.1)', padding: '6px 10px', borderRadius: 'var(--r-sm)' }}>
-                <AlertCircle size={16} style={{ flexShrink: 0 }} />
-                <span>{syncError}</span>
-              </div>
-            )}
-          </div>
-
-          <div style={{ borderTop: '1px solid var(--outline-var)', paddingTop: '12px' }}>
-            <h4 className="m3-title-small" style={{ margin: '0 0 6px 0', color: 'var(--on-surface)' }}>
-              Copia de Seguridad Local
-            </h4>
-            <p className="m3-body-small" style={{ color: 'var(--on-surface-var)', margin: '0 0 10px 0' }}>
-              Podés descargar en cualquier momento una copia JSON con todos tus relevamientos y clientes.
-            </p>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => exportBackupJSON(projects)}
-            >
-              <Download size={15} />
-              <span>Descargar Archivo de Respaldo JSON</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Tab 4: Parámetros Técnicos */}
-      {activeTab === 'tecnico' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <p className="m3-body-small" style={{ color: 'var(--on-surface-var)', margin: 0 }}>
-            Valores por defecto para el trazado de ambientes y cómputo de materiales.
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+        {/* 4. Parámetros Técnicos / Dibujo */}
+        <div>
+          <h4 style={sectionTitleStyle}>
+            <Ruler size={14} style={{ color: 'var(--primary)' }} />
+            <span>Parámetros Técnicos de Dibujo & Cómputo</span>
+          </h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
             <div>
               <F label="Altura de Pared Default (m)">
                 <input
@@ -432,7 +432,8 @@ export const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => 
             </div>
           </div>
         </div>
-      )}
+
+      </div>
     </Modal>
   );
 };
