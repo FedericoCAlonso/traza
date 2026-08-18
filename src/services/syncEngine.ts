@@ -53,58 +53,59 @@ class DecentralizedSyncEngine {
       const localProjects = loadProjects().map(normalizeProject);
       const localClients = loadClients();
 
-      // 2. Fusión de Clientes (Last-Write-Wins)
+      // 2. Fusión de Clientes / Contactos (Last-Write-Wins con Soft-Delete)
       const mergedClientsMap = new Map<string, any>();
-      localClients.forEach(c => mergedClientsMap.set(c.id, c));
+      localClients.forEach(c => mergedClientsMap.set(String(c.id), c));
       
       const remoteClients = [
         ...(Array.isArray(remotePayload?.clientes) ? remotePayload.clientes : []),
-        ...(Array.isArray(remotePayload?.contactos) ? remotePayload.contactos : [])
+        ...(Array.isArray(remotePayload?.contactos) ? remotePayload.contactos : []),
+        ...(Array.isArray(remotePayload?.proveedores) ? remotePayload.proveedores : [])
       ];
 
       remoteClients.forEach(rc => {
         if (!rc || !rc.id) return;
+        const id = String(rc.id);
         const razonSocial = rc.razonSocial || rc.nombre || rc.nombreFantasia || 'Sin Nombre';
         const nombre = rc.nombre || rc.razonSocial || razonSocial;
         const cuitDni = rc.cuitDni || rc.cuit || (rc as any).dniCuit || '';
 
         const normalizedRemote: any = {
           ...rc,
-          id: String(rc.id),
+          id,
           razonSocial,
           nombre,
           cuitDni,
           cuit: cuitDni,
           roles: rc.roles || ['cliente'],
-          obras: Array.isArray(rc.obras) ? rc.obras : []
+          obras: Array.isArray(rc.obras) ? rc.obras : [],
+          deleted: rc.deleted || false,
+          updatedAt: rc.updatedAt || rc.createdAt || new Date(0).toISOString()
         };
 
-        const local = mergedClientsMap.get(String(rc.id));
+        const local = mergedClientsMap.get(id);
         if (!local) {
-          mergedClientsMap.set(String(rc.id), normalizedRemote);
+          mergedClientsMap.set(id, normalizedRemote);
         } else {
           const localUp = new Date(local.updatedAt || local.createdAt || 0).getTime();
-          const remoteUp = new Date(rc.updatedAt || rc.createdAt || 0).getTime();
+          const remoteUp = new Date(normalizedRemote.updatedAt || 0).getTime();
           if (remoteUp >= localUp) {
-            // Preservar obras locales si el remoto no las tenía
             const mergedObras = normalizedRemote.obras && normalizedRemote.obras.length > 0 
               ? normalizedRemote.obras 
               : (local.obras || []);
-            mergedClientsMap.set(String(rc.id), { ...local, ...normalizedRemote, obras: mergedObras });
+            mergedClientsMap.set(id, { ...local, ...normalizedRemote, obras: mergedObras });
           }
         }
       });
 
       const consolidatedClients = Array.from(mergedClientsMap.values());
       saveClients(consolidatedClients);
-      // Actualizar reactivamente el store de Zustand para que la UI se refresque al instante
       useClientsStore.getState().setClients(consolidatedClients);
 
-      // 3. Fusión de Proyectos CAD de Traza (Last-Write-Wins)
+      // 3. Fusión de Proyectos CAD de Traza (Last-Write-Wins con Soft-Delete)
       const mergedProjectsMap = new Map<string, any>();
-      localProjects.forEach(p => mergedProjectsMap.set(p.id, p));
+      localProjects.forEach(p => mergedProjectsMap.set(String(p.id), p));
 
-      // Leer de trazaProyectos, o fallback a proyectos si eran objetos CAD con ambientes
       const remoteTrazaProjs: any[] = [];
       if (remotePayload?.trazaProyectos && Array.isArray(remotePayload.trazaProyectos)) {
         remoteTrazaProjs.push(...remotePayload.trazaProyectos);
@@ -119,23 +120,23 @@ class DecentralizedSyncEngine {
 
       remoteTrazaProjs.forEach(rp => {
         if (!rp || !rp.id) return;
+        const id = String(rp.id);
         const normRemote = normalizeProject(rp);
-        const local = mergedProjectsMap.get(rp.id);
+        const local = mergedProjectsMap.get(id);
         if (!local) {
-          mergedProjectsMap.set(rp.id, normRemote);
+          mergedProjectsMap.set(id, normRemote);
         } else {
           const localUp = local.updatedAt || local.createdAt || 0;
           const remoteUp = normRemote.updatedAt || normRemote.createdAt || 0;
           if (remoteUp >= localUp) {
-            mergedProjectsMap.set(rp.id, normRemote);
+            mergedProjectsMap.set(id, normRemote);
           }
         }
       });
 
       const consolidatedProjects = Array.from(mergedProjectsMap.values());
       saveProjects(consolidatedProjects);
-      // Actualizar reactivamente el store de Zustand
-      useProjectStore.getState().importProjects(consolidatedProjects);
+      useProjectStore.getState().setProjects(consolidatedProjects);
 
       // 4. PUSH de la versión consolidada a Google Drive respetando tablas de Cotizador
       // Filtrar de `proyectos` los que eran CAD para que Cotizador mantenga sus proyectos de cotización limpios

@@ -40,7 +40,12 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
   },
 
   deleteClient: (id) => {
-    const next = get().clients.filter(c => c.id !== id);
+    const next = get().clients.map(c => {
+      if (c.id === id) {
+        return { ...c, deleted: true, updatedAt: new Date().toISOString() };
+      }
+      return c;
+    });
     saveClients(next);
     set({ clients: next });
   },

@@ -203,6 +203,9 @@ export function DashboardScreen() {
   const formatDate = (ms: number) => new Date(ms).toLocaleDateString();
   const selectedClient = getClientById(selectedClientId);
 
+  const activeProjects = projects.filter(p => !p.deleted);
+  const activeClients = clients.filter(c => !c.deleted);
+
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', fontFamily: 'var(--sans)', color: 'var(--on-surface)' }}>
       {/* Hidden file input for JSON restore */}
@@ -236,7 +239,7 @@ export function DashboardScreen() {
               Relevamientos & Planos
             </h1>
             <p className="m3-label-medium" style={{ margin: 0, color: 'var(--on-surface-var)' }}>
-              {projects.length} relevamiento{projects.length === 1 ? '' : 's'} · {clients.length} cliente{clients.length === 1 ? '' : 's'} · Suite ieBA
+              {activeProjects.length} relevamiento{activeProjects.length === 1 ? '' : 's'} · {activeClients.length} cliente{activeClients.length === 1 ? '' : 's'} · Suite ieBA
             </p>
           </div>
         </div>
@@ -333,7 +336,7 @@ export function DashboardScreen() {
 
       {/* Grid de Proyectos */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 350px), 1fr))', gap: '1.5rem' }}>
-        {projects.length === 0 ? (
+        {activeProjects.length === 0 ? (
           <div
             className="empty-state"
             style={{
@@ -363,7 +366,7 @@ export function DashboardScreen() {
             </div>
           </div>
         ) : (
-          projects.map((p) => {
+          activeProjects.map((p) => {
             const client = getClientById(p.clienteId);
             const obra = client?.obras?.find(o => o.id === p.obraId);
 
@@ -549,9 +552,9 @@ export function DashboardScreen() {
                       style={{ flex: 1 }}
                     >
                       <option value="">-- Seleccionar de mis Clientes --</option>
-                      {clients.map(c => (
+                      {activeClients.map(c => (
                         <option key={c.id} value={c.id}>
-                          {c.razonSocial || c.nombre} {c.cuitDni ? `(${c.cuitDni})` : ''}
+                          {c.razonSocial || c.nombre || c.nombreFantasia || 'Cliente sin nombre'} {c.cuitDni ? `(${c.cuitDni})` : ''}
                         </option>
                       ))}
                     </select>

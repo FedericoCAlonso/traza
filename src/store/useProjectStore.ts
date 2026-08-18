@@ -25,6 +25,8 @@ export function normalizeAmbiente(a: Ambiente): Ambiente {
 export function normalizeProject(p: Project): Project {
   return {
     ...p,
+    deleted:            p.deleted || false,
+    deletedAt:          p.deletedAt,
     ambientes:          (p.ambientes     || []).map(normalizeAmbiente),
     circuitos:          p.circuitos     || [],
     tableros:           p.tableros      || [],
@@ -108,7 +110,7 @@ export const useProjectStore = create<ProjectState>()(
       if (!id) {
         return { activeProjectId: null, activeAmbienteId: null }
       }
-      const p = state.projects.find(x => x.id === id)
+      const p = state.projects.find(x => x.id === id && !x.deleted)
       return {
         activeProjectId: id,
         activeAmbienteId: p?.ambientes?.[0]?.id || null
@@ -131,7 +133,13 @@ export const useProjectStore = create<ProjectState>()(
 
     deleteProject: (id) => set((state) => {
       removeFromFirebase(id);
-      const nextProjects = state.projects.filter(p => p.id !== id);
+      const now = Date.now();
+      const nextProjects = state.projects.map(p => {
+        if (p.id === id) {
+          return { ...p, deleted: true, deletedAt: now, updatedAt: now };
+        }
+        return p;
+      });
       saveProjects(nextProjects);
       return {
         projects: nextProjects,

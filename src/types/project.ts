@@ -132,6 +132,10 @@ export interface Project {
 
   /** UIDs de usuarios con acceso compartido de lectura/edición. */
   sharedWith?: string[]
+
+  /** Soft-delete flag para sincronización distribuida Last-Write-Wins */
+  deleted?: boolean
+  deletedAt?: number
 }
 
 /**
