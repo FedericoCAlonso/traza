@@ -2,7 +2,8 @@ import type { MasterDatabasePayload, SyncExecutionResult } from './syncTypes';
 import { gdriveProvider } from './GoogleDriveProvider';
 import { loadProjects, saveProjects } from '../lib/storage';
 import { loadClients, saveClients } from '../lib/clientStorage';
-import { normalizeProject } from '../store/useProjectStore';
+import { normalizeProject, useProjectStore } from '../store/useProjectStore';
+import { useClientsStore } from '../store/useClientsStore';
 
 class DecentralizedSyncEngine {
   private isSyncing = false;
@@ -22,18 +23,20 @@ class DecentralizedSyncEngine {
   }
 
   getLocalPayload(): MasterDatabasePayload {
+    const localClients = loadClients();
+    const localProjects = loadProjects().map(normalizeProject);
     return {
       version: 2,
       schemaVersion: 4,
       exportedAt: new Date().toISOString(),
-      clientes: loadClients(),
-      contactos: loadClients(),
-      proyectos: loadProjects().map(normalizeProject),
+      clientes: localClients,
+      contactos: localClients,
+      trazaProyectos: localProjects,
     };
   }
 
   /**
-   * Sincronización completa con Google Drive: PULL -> MERGE -> PUSH
+   * Sincronización completa con Google Drive: PULL -> LWW MERGE -> REACTIVE STORE REFRESH -> PUSH
    */
   async executeDriveSync(): Promise<SyncExecutionResult> {
     if (this.isSyncing) {
@@ -47,50 +50,82 @@ class DecentralizedSyncEngine {
     try {
       // 1. PULL de Google Drive
       const remotePayload = await gdriveProvider.readMasterPayload();
-      const localProjects = loadProjects();
+      const localProjects = loadProjects().map(normalizeProject);
       const localClients = loadClients();
 
       // 2. Fusión de Clientes (Last-Write-Wins)
       const mergedClientsMap = new Map<string, any>();
       localClients.forEach(c => mergedClientsMap.set(c.id, c));
-      if (remotePayload?.clientes && Array.isArray(remotePayload.clientes)) {
-        remotePayload.clientes.forEach(rc => {
-          const local = mergedClientsMap.get(rc.id);
-          if (!local) {
-            mergedClientsMap.set(rc.id, rc);
-          } else {
-            const localUp = new Date(local.updatedAt || local.createdAt || 0).getTime();
-            const remoteUp = new Date(rc.updatedAt || rc.createdAt || 0).getTime();
-            if (remoteUp >= localUp) {
-              mergedClientsMap.set(rc.id, rc);
-            }
+      
+      const remoteClients = [
+        ...(Array.isArray(remotePayload?.clientes) ? remotePayload.clientes : []),
+        ...(Array.isArray(remotePayload?.contactos) ? remotePayload.contactos : [])
+      ];
+
+      remoteClients.forEach(rc => {
+        if (!rc || !rc.id) return;
+        const local = mergedClientsMap.get(rc.id);
+        if (!local) {
+          mergedClientsMap.set(rc.id, rc);
+        } else {
+          const localUp = new Date(local.updatedAt || local.createdAt || 0).getTime();
+          const remoteUp = new Date(rc.updatedAt || rc.createdAt || 0).getTime();
+          if (remoteUp >= localUp) {
+            // Preservar obras locales si el remoto no las tenía
+            const mergedObras = rc.obras && rc.obras.length > 0 ? rc.obras : (local.obras || []);
+            mergedClientsMap.set(rc.id, { ...local, ...rc, obras: mergedObras });
           }
-        });
-      }
+        }
+      });
+
       const consolidatedClients = Array.from(mergedClientsMap.values());
       saveClients(consolidatedClients);
+      // Actualizar reactivamente el store de Zustand para que la UI se refresque al instante
+      useClientsStore.getState().setClients(consolidatedClients);
 
-      // 3. Fusión de Proyectos (Last-Write-Wins)
+      // 3. Fusión de Proyectos CAD de Traza (Last-Write-Wins)
       const mergedProjectsMap = new Map<string, any>();
-      localProjects.forEach(p => mergedProjectsMap.set(p.id, normalizeProject(p)));
+      localProjects.forEach(p => mergedProjectsMap.set(p.id, p));
+
+      // Leer de trazaProyectos, o fallback a proyectos si eran objetos CAD con ambientes
+      const remoteTrazaProjs: any[] = [];
+      if (remotePayload?.trazaProyectos && Array.isArray(remotePayload.trazaProyectos)) {
+        remoteTrazaProjs.push(...remotePayload.trazaProyectos);
+      }
       if (remotePayload?.proyectos && Array.isArray(remotePayload.proyectos)) {
-        remotePayload.proyectos.forEach(rp => {
-          const local = mergedProjectsMap.get(rp.id);
-          if (!local) {
-            mergedProjectsMap.set(rp.id, normalizeProject(rp));
-          } else {
-            const localUp = local.updatedAt || local.createdAt || 0;
-            const remoteUp = rp.updatedAt || rp.createdAt || 0;
-            if (remoteUp >= localUp) {
-              mergedProjectsMap.set(rp.id, normalizeProject(rp));
-            }
+        remotePayload.proyectos.forEach(p => {
+          if (p && Array.isArray(p.ambientes)) {
+            remoteTrazaProjs.push(p);
           }
         });
       }
+
+      remoteTrazaProjs.forEach(rp => {
+        if (!rp || !rp.id) return;
+        const normRemote = normalizeProject(rp);
+        const local = mergedProjectsMap.get(rp.id);
+        if (!local) {
+          mergedProjectsMap.set(rp.id, normRemote);
+        } else {
+          const localUp = local.updatedAt || local.createdAt || 0;
+          const remoteUp = normRemote.updatedAt || normRemote.createdAt || 0;
+          if (remoteUp >= localUp) {
+            mergedProjectsMap.set(rp.id, normRemote);
+          }
+        }
+      });
+
       const consolidatedProjects = Array.from(mergedProjectsMap.values());
       saveProjects(consolidatedProjects);
+      // Actualizar reactivamente el store de Zustand
+      useProjectStore.getState().importProjects(consolidatedProjects);
 
-      // 4. PUSH de la versión consolidada a Google Drive
+      // 4. PUSH de la versión consolidada a Google Drive respetando tablas de Cotizador
+      // Filtrar de `proyectos` los que eran CAD para que Cotizador mantenga sus proyectos de cotización limpios
+      const cotizadorProyectosClean = Array.isArray(remotePayload?.proyectos)
+        ? remotePayload.proyectos.filter(p => !p.ambientes)
+        : [];
+
       const consolidatedPayload: MasterDatabasePayload = {
         version: 2,
         schemaVersion: 4,
@@ -98,7 +133,8 @@ class DecentralizedSyncEngine {
         ...(remotePayload || {}),
         clientes: consolidatedClients,
         contactos: consolidatedClients,
-        proyectos: consolidatedProjects,
+        proyectos: cotizadorProyectosClean,
+        trazaProyectos: consolidatedProjects,
       };
 
       await gdriveProvider.writeMasterPayload(consolidatedPayload);
@@ -107,17 +143,18 @@ class DecentralizedSyncEngine {
         success: true,
         provider: 'google_drive',
         timestamp,
-        message: `Sincronización con Drive exitosa (${consolidatedClients.length} clientes, ${consolidatedProjects.length} proyectos).`
+        message: `Sincronización exitosa (${consolidatedClients.length} clientes, ${consolidatedProjects.length} relevamientos).`
       };
 
       this.lastResult = result;
       return result;
     } catch (err: any) {
+      console.error('[syncEngine] Error en sincronización:', err);
       const result: SyncExecutionResult = {
         success: false,
         provider: 'google_drive',
         timestamp,
-        message: 'Error al sincronizar con Google Drive',
+        message: err.message || 'Error al sincronizar con Google Drive',
         error: err.message
       };
       this.lastResult = result;
@@ -130,3 +167,4 @@ class DecentralizedSyncEngine {
 }
 
 export const syncEngine = new DecentralizedSyncEngine();
+

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase';
 
@@ -33,7 +33,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        localStorage.setItem('ieba_gdrive_access_token', credential.accessToken);
+        localStorage.setItem('ieba_gdrive_token_expires_at', String(Date.now() + 3540 * 1000));
+        if (result.user.email) {
+          localStorage.setItem('ieba_gdrive_user_email', result.user.email);
+        }
+      }
     } catch (error) {
       console.error('Error signing in with Google', error);
     }
@@ -41,6 +49,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      localStorage.removeItem('ieba_gdrive_access_token');
+      localStorage.removeItem('ieba_gdrive_token_expires_at');
+      localStorage.removeItem('ieba_gdrive_user_email');
       await signOut(auth);
     } catch (error) {
       console.error('Error signing out', error);

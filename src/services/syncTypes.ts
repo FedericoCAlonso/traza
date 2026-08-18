@@ -7,10 +7,12 @@ export interface MasterDatabasePayload {
   schemaVersion: number;
   exportedAt: string;
   deviceId?: string;
-  clientes: Cliente[];
+  clientes?: Cliente[];
   contactos?: Contacto[];
-  proyectos: Project[];
+  proyectos?: any[];
+  trazaProyectos?: Project[];
   presupuestos?: any[];
+  solicitudesCotizacion?: any[];
   config?: AppConfig[];
   [key: string]: any;
 }
