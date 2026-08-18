@@ -7,6 +7,7 @@ import { EditorScreen } from './EditorScreen'
 import { Preview } from './components/Preview'
 import { MasterView } from './components/MasterView'
 import { SymbolDialog } from '../../components/SymbolDialog'
+import { Modal } from '../Modal'
 import { 
   exportToMarkdown, 
   exportMaterialsToCSV, 
@@ -20,6 +21,18 @@ import {
 import type { Project, EditorTab, SelectedElement, SymbolDialogData, Ambiente } from '../../types/index'
 import type { MedicionCampania, ElementoMedicionRef } from '../../types/measurements'
 import { MedicionFormModal } from './components/MedicionFormModal'
+import { 
+  Building2, 
+  Zap, 
+  Map as MapIcon, 
+  Pencil, 
+  FileText, 
+  FileSpreadsheet, 
+  Binary, 
+  Ruler, 
+  Layers, 
+  Download 
+} from 'lucide-react'
 
 const PLANTA_TABS = ['resumen', 'general', 'hoja', 'paredes', 'aberturas', 'maestro', 'cobertura'] as const
 const ELECTRICO_TABS = ['resumen', 'electrico', 'circuitos', 'conexiones', 'mediciones'] as const
@@ -45,7 +58,6 @@ export function RelevadorTool() {
   const activeProject = projects.find(p => p.id === activeProjectId)
   const activeAmbiente = activeProject?.ambientes?.find(a => a.id === activeAmbienteId) || activeProject?.ambientes?.[0]
 
-  // Mock UI state (previously from ProjectContext)
   const [activeTab, setActiveTab] = useState<EditorTab>('resumen')
   const [mobileEditorVisible, setMobileEditorVisible] = useState(false)
   
@@ -75,18 +87,44 @@ export function RelevadorTool() {
   const showMasterView = isPlanta && activeTab === 'maestro'
 
   const modeSelector = (
-    <div className="mode-segmented-control" style={{ display: 'flex', background: 'var(--bg)', borderRadius: '6px', padding: '2px', border: '1px solid var(--border)' }}>
+    <div className="mode-segmented-control" style={{ display: 'flex', background: 'var(--surface-container-high)', borderRadius: 'var(--r-full)', padding: '2px' }}>
       <button 
         onClick={() => handleModeChange('planta')}
-        style={{ padding: '4px 8px', fontSize: 12, borderRadius: '4px', background: isPlanta ? 'var(--primary)' : 'transparent', color: isPlanta ? 'white' : 'var(--text)', border: 'none', cursor: 'pointer', fontWeight: isPlanta ? 600 : 400 }}
+        style={{
+          padding: '6px 12px',
+          fontSize: 12,
+          borderRadius: 'var(--r-full)',
+          background: isPlanta ? 'var(--primary)' : 'transparent',
+          color: isPlanta ? 'var(--on-primary)' : 'var(--on-surface-var)',
+          border: 'none',
+          cursor: 'pointer',
+          fontWeight: isPlanta ? 600 : 500,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px'
+        }}
       >
-        🏗️ Planta
+        <Building2 size={14} />
+        <span>Planta</span>
       </button>
       <button 
         onClick={() => handleModeChange('electrico')}
-        style={{ padding: '4px 8px', fontSize: 12, borderRadius: '4px', background: !isPlanta ? 'var(--primary)' : 'transparent', color: !isPlanta ? 'white' : 'var(--text)', border: 'none', cursor: 'pointer', fontWeight: !isPlanta ? 600 : 400 }}
+        style={{
+          padding: '6px 12px',
+          fontSize: 12,
+          borderRadius: 'var(--r-full)',
+          background: !isPlanta ? 'var(--primary)' : 'transparent',
+          color: !isPlanta ? 'var(--on-primary)' : 'var(--on-surface-var)',
+          border: 'none',
+          cursor: 'pointer',
+          fontWeight: !isPlanta ? 600 : 500,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px'
+        }}
       >
-        ⚡ Eléctrico
+        <Zap size={14} />
+        <span>Eléctrico</span>
       </button>
     </div>
   )
@@ -108,12 +146,12 @@ export function RelevadorTool() {
                  from: { ambienteId: activeAmbienteId!, elementoId: pendingConnectionStart },
                  to: { ambienteId: activeAmbienteId!, elementoId: clickedElecId },
                  cables: [
-                   { tipo: 'fase', seccion: 2.5, color: 'negro' },
-                   { tipo: 'neutro', seccion: 2.5, color: 'celeste' },
-                   { tipo: 'pe', seccion: 2.5, color: 'verde-amarillo' },
+                   { tipo: 'fase' as const, seccion: 2.5, color: 'negro' },
+                   { tipo: 'neutro' as const, seccion: 2.5, color: 'celeste' },
+                   { tipo: 'pe' as const, seccion: 2.5, color: 'verde-amarillo' },
                  ],
                  conducto: 'PVC 20mm'
-              } as any;
+              };
               updateProject(activeProject!.id, p => ({
                  ...p,
                  conexiones: [...(p.conexiones || []), nuevaConexion]
@@ -297,13 +335,12 @@ export function RelevadorTool() {
         />
       )}
 
-
       <button
         className="mobile-view-toggle"
         onClick={() => setMobileEditorVisible(!mobileEditorVisible)}
         title={mobileEditorVisible ? 'Ver plano' : 'Editar datos'}
       >
-        {mobileEditorVisible ? '🗺️' : '✏️'}
+        {mobileEditorVisible ? <MapIcon size={24} /> : <Pencil size={24} />}
       </button>
     </div>
   )
@@ -387,87 +424,74 @@ function ExportModal({ project, ambiente, onCancel }: ExportModalProps) {
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      background: 'rgba(0,0,0,0.6)',
-      backdropFilter: 'blur(8px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 10000,
-      padding: 16
-    }}>
-      <div className="card" style={{
-        width: '100%',
-        maxWidth: 420,
-        background: 'var(--surface-1)',
-        padding: 20,
-        borderRadius: 16,
-        boxShadow: 'var(--shadow-3)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 16
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, fontSize: 18, color: 'var(--text-h)' }}>📥 Exportar Proyecto</h3>
-          <button className="btn btn-ghost btn-sm" onClick={onCancel} style={{ padding: 4, minWidth: 'auto', border: 'none', background: 'transparent', cursor: 'pointer' }}>✕</button>
+    <Modal
+      isOpen={true}
+      onClose={onCancel}
+      title="Exportar Proyecto y Planos"
+      maxWidth="460px"
+      footer={
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+          <button className="btn btn-primary btn-full" onClick={handleDownload}>
+            <Download size={16} />
+            <span>Descargar Seleccionados</span>
+          </button>
+          <button className="btn btn-ghost btn-full" onClick={handleAll}>
+            <span>Descargar Todo (MD + CSVs + SVGs)</span>
+          </button>
         </div>
+      }
+    >
+      <p className="m3-body-small" style={{ color: 'var(--on-surface-var)', marginTop: 0, marginBottom: 16 }}>
+        Seleccioná los informes y planos técnicos que querés generar para el proyecto <strong>{project.nombre}</strong>:
+      </p>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer' }}>
+          <input type="checkbox" checked={opts.md} onChange={e => setOpts({ ...opts, md: e.target.checked })} />
+          <FileText size={16} style={{ color: 'var(--primary)' }} />
+          <span>Informe Técnico Completo (Markdown)</span>
+        </label>
         
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--text-dim)' }}>
-          Seleccioná los informes y planos que querés generar para el proyecto <strong>{project.nombre}</strong>:
-        </p>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer' }}>
+          <input type="checkbox" checked={opts.mat} onChange={e => setOpts({ ...opts, mat: e.target.checked })} />
+          <FileSpreadsheet size={16} style={{ color: 'var(--primary)' }} />
+          <span>Planilla de Cómputo de Materiales (CSV)</span>
+        </label>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--sans)' }}>
-            <input type="checkbox" checked={opts.md} onChange={e => setOpts({ ...opts, md: e.target.checked })} />
-            <span>📄 Informe Técnico Completo (Markdown)</span>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer' }}>
+          <input type="checkbox" checked={opts.bocas} onChange={e => setOpts({ ...opts, bocas: e.target.checked })} />
+          <Zap size={16} style={{ color: 'var(--primary)' }} />
+          <span>Listado de Bocas y Alturas (CSV)</span>
+        </label>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer' }}>
+          <input type="checkbox" checked={opts.circs} onChange={e => setOpts({ ...opts, circs: e.target.checked })} />
+          <Binary size={16} style={{ color: 'var(--primary)' }} />
+          <span>Listado de Circuitos (CSV)</span>
+        </label>
+
+        {(project.campanias && project.campanias.length > 0) && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer' }}>
+            <input type="checkbox" checked={opts.mediciones} onChange={e => setOpts({ ...opts, mediciones: e.target.checked })} />
+            <Ruler size={16} style={{ color: 'var(--primary)' }} />
+            <span>Reportes de Mediciones (MD y CSV)</span>
           </label>
-          
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--sans)' }}>
-            <input type="checkbox" checked={opts.mat} onChange={e => setOpts({ ...opts, mat: e.target.checked })} />
-            <span>📊 Planilla de Cómputo de Materiales (CSV)</span>
+        )}
+
+        {ambiente && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer' }}>
+            <input type="checkbox" checked={opts.svgActive} onChange={e => setOpts({ ...opts, svgActive: e.target.checked })} />
+            <Layers size={16} style={{ color: 'var(--primary)' }} />
+            <span>Plano SVG de {ambiente.nombre}</span>
           </label>
+        )}
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--sans)' }}>
-            <input type="checkbox" checked={opts.bocas} onChange={e => setOpts({ ...opts, bocas: e.target.checked })} />
-            <span>⚡ Listado de Bocas y Alturas (CSV)</span>
-          </label>
-
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--sans)' }}>
-            <input type="checkbox" checked={opts.circs} onChange={e => setOpts({ ...opts, circs: e.target.checked })} />
-            <span>🔢 Listado de Circuitos (CSV)</span>
-          </label>
-
-          {(project.campanias && project.campanias.length > 0) && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--sans)' }}>
-              <input type="checkbox" checked={opts.mediciones} onChange={e => setOpts({ ...opts, mediciones: e.target.checked })} />
-              <span>📐 Reportes de Mediciones (MD y CSV)</span>
-            </label>
-          )}
-
-          {ambiente && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--sans)' }}>
-              <input type="checkbox" checked={opts.svgActive} onChange={e => setOpts({ ...opts, svgActive: e.target.checked })} />
-              <span>🗺️ Plano SVG de {ambiente.nombre}</span>
-            </label>
-          )}
-
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--sans)' }}>
-            <input type="checkbox" checked={opts.svgAll} onChange={e => setOpts({ ...opts, svgAll: e.target.checked })} />
-            <span>🗺️ Planos SVG de Todos los Ambientes</span>
-          </label>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-          <button className="btn btn-acc btn-full" onClick={handleDownload}>
-            Descargar Seleccionados
-          </button>
-          <button className="btn btn-ghost btn-full" onClick={handleAll} style={{ border: '1px solid var(--outline-var)' }}>
-            Descargar Todo (MD + CSVs + SVGs)
-          </button>
-        </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer' }}>
+          <input type="checkbox" checked={opts.svgAll} onChange={e => setOpts({ ...opts, svgAll: e.target.checked })} />
+          <MapIcon size={16} style={{ color: 'var(--primary)' }} />
+          <span>Planos SVG de Todos los Ambientes</span>
+        </label>
       </div>
-    </div>
+    </Modal>
   );
 }

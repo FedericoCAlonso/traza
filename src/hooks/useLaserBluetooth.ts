@@ -29,6 +29,10 @@ interface UseLaserBluetoothReturn {
   connect: () => Promise<void>;
   disconnect: () => void;
   isSupported: boolean;
+  isConnected: boolean;
+  deviceInfo: string | null;
+  lastMeasurement: number | null;
+  clearMeasurement: () => void;
 }
 
 // ─── Perfiles BLE conocidos ────────────────────────────────────────────────
@@ -198,5 +202,21 @@ export function useLaserBluetooth(onReading?: (value: number) => void): UseLaser
     setLastReading(null);
   }, []);
 
-  return { status, lastReading, deviceName, error, connect, disconnect, isSupported };
+  const clearMeasurement = useCallback(() => {
+    setLastReading(null);
+  }, []);
+
+  return {
+    status,
+    lastReading,
+    deviceName,
+    error,
+    connect,
+    disconnect,
+    isSupported,
+    isConnected: status === 'connected',
+    deviceInfo: deviceName,
+    lastMeasurement: lastReading?.value ?? null,
+    clearMeasurement,
+  };
 }

@@ -290,6 +290,32 @@ export function useEditorState(
 
   const cancelConnecting = useCallback(() => setPendingConnection(null), []);
 
+  const createConexion = useCallback((
+    fromAmbId: string,
+    fromElId: string,
+    toAmbId: string,
+    toElId: string,
+    conducto: string = 'PVC 20mm',
+    cables: Cable[] = [
+      { tipo: 'fase',   seccion: 2.5, color: 'negro' },
+      { tipo: 'neutro', seccion: 2.5, color: 'celeste' },
+      { tipo: 'pe',     seccion: 2.5, color: 'verde-amarillo' },
+    ]
+  ) => {
+    const nuevaConexion: Conexion = {
+      id: Date.now().toString(),
+      from: { ambienteId: fromAmbId, elementoId: fromElId },
+      to: { ambienteId: toAmbId, elementoId: toElId },
+      cables,
+      conducto,
+    };
+    onUpdateProject(p => ({
+      ...p,
+      conexiones: [...(p.conexiones || []), nuevaConexion]
+    }));
+    return nuevaConexion;
+  }, [onUpdateProject]);
+
   return {
     // Estado
     creationFlow,
@@ -309,6 +335,7 @@ export function useEditorState(
     startConnecting,
     finishConnecting,
     cancelConnecting,
+    createConexion,
 
     // Atajos de datos
     circuitos: project.circuitos || [],

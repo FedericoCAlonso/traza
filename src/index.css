@@ -38,6 +38,13 @@
   --surface-4:      #29253B;   /* +12% */
   --surface-5:      #2D2840;   /* +14% */
 
+  /* M3 Surface Container Roles */
+  --surface-container-lowest:  #0F0D13;
+  --surface-container-low:     #1D1B20;
+  --surface-container:         #211F26;
+  --surface-container-high:    #2B2930;
+  --surface-container-highest: #36343B;
+
   --on-surface:     #E6E1E5;
   --on-surface-var: #CAC4D0;
   --outline:        rgba(255,255,255,0.12);
@@ -112,6 +119,29 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
 }
+
+/* ───────────────────────────────────────────────
+   M3 TYPOGRAPHY SCALE
+─────────────────────────────────────────────── */
+.m3-display-large   { font-family: var(--sans); font-size: 57px; line-height: 64px; letter-spacing: -0.25px; font-weight: 400; }
+.m3-display-medium  { font-family: var(--sans); font-size: 45px; line-height: 52px; letter-spacing: 0px;     font-weight: 400; }
+.m3-display-small   { font-family: var(--sans); font-size: 36px; line-height: 44px; letter-spacing: 0px;     font-weight: 400; }
+
+.m3-headline-large  { font-family: var(--sans); font-size: 32px; line-height: 40px; letter-spacing: 0px;     font-weight: 600; }
+.m3-headline-medium { font-family: var(--sans); font-size: 28px; line-height: 36px; letter-spacing: 0px;     font-weight: 600; }
+.m3-headline-small  { font-family: var(--sans); font-size: 24px; line-height: 32px; letter-spacing: 0px;     font-weight: 600; }
+
+.m3-title-large     { font-family: var(--sans); font-size: 22px; line-height: 28px; letter-spacing: 0px;     font-weight: 600; }
+.m3-title-medium    { font-family: var(--sans); font-size: 16px; line-height: 24px; letter-spacing: 0.15px;  font-weight: 600; }
+.m3-title-small     { font-family: var(--sans); font-size: 14px; line-height: 20px; letter-spacing: 0.1px;   font-weight: 600; }
+
+.m3-body-large      { font-family: var(--sans); font-size: 16px; line-height: 24px; letter-spacing: 0.5px;   font-weight: 400; }
+.m3-body-medium     { font-family: var(--sans); font-size: 14px; line-height: 20px; letter-spacing: 0.25px;  font-weight: 400; }
+.m3-body-small      { font-family: var(--sans); font-size: 12px; line-height: 16px; letter-spacing: 0.4px;   font-weight: 400; }
+
+.m3-label-large     { font-family: var(--sans); font-size: 14px; line-height: 20px; letter-spacing: 0.1px;   font-weight: 500; }
+.m3-label-medium    { font-family: var(--sans); font-size: 12px; line-height: 16px; letter-spacing: 0.5px;   font-weight: 500; }
+.m3-label-small     { font-family: var(--sans); font-size: 11px; line-height: 16px; letter-spacing: 0.5px;   font-weight: 500; }
 
 /* ───────────────────────────────────────────────
    APP SHELL

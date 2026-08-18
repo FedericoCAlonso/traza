@@ -1,4 +1,6 @@
+import React from 'react';
 import type { Project } from '../types/index';
+import { RotateCcw, Download, X, ChevronRight } from 'lucide-react';
 
 interface AppHeaderProps {
   screen: 'projects' | 'editor';
@@ -23,38 +25,47 @@ export function AppHeader({
 }: AppHeaderProps) {
   return (
     <header className="topbar">
-      <span className="topbar-logo" onClick={onGoHome}>ieBA</span>
+      <span className="topbar-logo" onClick={onGoHome} title="Ir al Dashboard">
+        Traza
+      </span>
+
       {screen === 'editor' && activeProject && (
         <span className="topbar-crumb">
-          ▸ <span>{activeProject.nombre || 'Proyecto'}</span>
+          <ChevronRight size={14} style={{ opacity: 0.6 }} />
+          <span>{activeProject.nombre || 'Proyecto'}</span>
           {activeAmbienteName && (
             <span style={{ opacity: 0.7 }}> / {activeAmbienteName}</span>
           )}
         </span>
       )}
+
       {modeSelector && (
         <span className="topbar-mode-container" style={{ display: 'flex', alignItems: 'center', marginLeft: '12px' }}>
           {modeSelector}
         </span>
       )}
-      <span className="topbar-sep"/>
-      
+
+      <span className="topbar-sep" />
+
       {screen === 'editor' && (
         <div className="topbar-actions">
           <button 
             className={`btn-topbar ${!canUndo ? 'disabled' : ''}`} 
             onClick={onUndo} 
             disabled={!canUndo} 
-            title="Deshacer"
+            title="Deshacer (Undo)"
           >
-            ↶
+            <RotateCcw size={18} />
           </button>
-          <button className="btn btn-acc btn-sm" onClick={onShowExport} title="Exportar">
-            <span style={{ fontSize: 16 }}>📥</span> <span className="hide-mobile">Exportar</span>
+          
+          <button className="btn btn-acc btn-sm" onClick={onShowExport} title="Exportar planos e informes">
+            <Download size={16} />
+            <span className="hide-mobile">Exportar</span>
           </button>
-          <button className="btn btn-ghost btn-sm" onClick={onGoHome} title="Cerrar">
+
+          <button className="btn btn-ghost btn-sm" onClick={onGoHome} title="Cerrar y volver a proyectos">
+            <X size={16} />
             <span className="hide-mobile">Cerrar</span>
-            <span className="mobile-only" style={{ fontSize: 18 }}>✕</span>
           </button>
         </div>
       )}

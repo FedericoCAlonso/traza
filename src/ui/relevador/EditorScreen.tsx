@@ -1,4 +1,18 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import { 
+  BarChart3, 
+  ClipboardList, 
+  FileText, 
+  Square, 
+  DoorOpen, 
+  TrendingUp, 
+  Zap, 
+  GitBranch, 
+  Link2, 
+  Ruler, 
+  Map as MapIcon, 
+  ShieldCheck 
+} from 'lucide-react';
 // Layout y Composición
 import { EditorLayout } from './components/EditorLayout';
 import { CreationFlowOverlay } from './components/CreationFlowOverlay';
@@ -104,19 +118,19 @@ export function EditorScreen(props: EditorScreenProps) {
     }
   };
 
-  const tabConfig: Record<EditorTab, { label: string, icon: string }> = {
-    resumen:     { label: 'Resumen',  icon: '📊' },
-    general:     { label: 'General',  icon: '📋' },
-    hoja:        { label: 'Hoja',     icon: '🏠' },
-    paredes:     { label: 'Paredes',  icon: '🧱' },
-    aberturas:   { label: 'Abert.',   icon: '🚪' },
-    escaleras:   { label: 'Escal.',   icon: '🪜' },
-    electrico:   { label: 'Bocas',    icon: '⚡' },
-    circuitos:   { label: 'Circ.',    icon: '🔌' },
-    conexiones:  { label: 'Canal.',   icon: '🔗' },
-    mediciones:  { label: 'Medic.',   icon: '📐' },
-    maestro:     { label: 'Maestro',  icon: '🗺️' },
-    cobertura:   { label: 'Cobert.',  icon: '☂️' }
+  const tabConfig: Record<EditorTab, { label: string, icon: ReactNode }> = {
+    resumen:     { label: 'Resumen',  icon: <BarChart3 size={16} /> },
+    general:     { label: 'General',  icon: <ClipboardList size={16} /> },
+    hoja:        { label: 'Hoja',     icon: <FileText size={16} /> },
+    paredes:     { label: 'Paredes',  icon: <Square size={16} /> },
+    aberturas:   { label: 'Abert.',   icon: <DoorOpen size={16} /> },
+    escaleras:   { label: 'Escal.',   icon: <TrendingUp size={16} /> },
+    electrico:   { label: 'Bocas',    icon: <Zap size={16} /> },
+    circuitos:   { label: 'Circ.',    icon: <GitBranch size={16} /> },
+    conexiones:  { label: 'Canal.',   icon: <Link2 size={16} /> },
+    mediciones:  { label: 'Medic.',   icon: <Ruler size={16} /> },
+    maestro:     { label: 'Maestro',  icon: <MapIcon size={16} /> },
+    cobertura:   { label: 'Cobert.',  icon: <ShieldCheck size={16} /> }
   };
 
   const visibleTabs = mode === 'planta' ? PLANTA_TABS : ELECTRICO_TABS;
@@ -161,7 +175,7 @@ export function EditorScreen(props: EditorScreenProps) {
                 setActiveTab(k);
               }}
             >
-              <span style={{ fontSize: 16 }}>{tabConfig[k].icon}</span>
+              <span>{tabConfig[k].icon}</span>
               <span>{tabConfig[k].label}</span>
             </button>
           ))}

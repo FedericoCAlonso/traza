@@ -90,13 +90,13 @@ export function CircuitsTab({ onCircuitCreated, onCancelCircuitRequest, pendingB
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {pendingBoca && (
-        <div style={{ background: 'var(--blue)', color: '#fff', padding: 12, borderRadius: 'var(--r)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ background: 'var(--primary-container)', color: 'var(--on-primary-container)', padding: '12px 16px', borderRadius: 'var(--r)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <strong>Creando Circuito para Boca</strong>
-            {tableros.length === 0 && <div style={{ fontSize: 13, marginTop: 4 }}>Por favor, crea un tablero primero.</div>}
+            <strong style={{ color: 'var(--on-primary-container)' }}>Creando Circuito para Boca</strong>
+            {tableros.length === 0 && <div style={{ fontSize: 12, marginTop: 2, opacity: 0.9 }}>Por favor, creá un tablero primero.</div>}
           </div>
-          <button className="btn btn-ghost btn-sm" onClick={handleCancelarCircuito} style={{ background: 'rgba(255,255,255,0.2)', color: 'white' }}>
-            ✕ Cancelar
+          <button className="btn btn-ghost btn-sm" onClick={handleCancelarCircuito} style={{ borderColor: 'var(--outline)', color: 'var(--on-primary-container)' }}>
+            Cancelar
           </button>
         </div>
       )}

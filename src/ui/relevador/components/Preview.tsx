@@ -124,20 +124,6 @@ export function Preview(props: PreviewProps) {
     }
   }, [ambiente, meta, symbolsLib, activeTab, project, selectedElement, campaniaActivaId]);
 
-  if (svgContent.startsWith('__ERROR__:')) {
-    return (
-      <div className="preview-area" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--red)', background: '#fff' }}>
-        <div style={{ textAlign: 'center', padding: '20px' }}>
-          <strong>⚠️ Error en el motor de dibujo</strong><br/>
-          <small>Los datos de geometría contienen valores inválidos.</small>
-          <pre style={{ textAlign: 'left', marginTop: 10, fontSize: 10, color: '#333' }}>
-            {svgContent.substring(10)}
-          </pre>
-        </div>
-      </div>
-    );
-  }
-
   /**
    * Maneja el clic en el área del plano.
    * Convierte coordenadas de pantalla → coordenadas del plano técnico
@@ -249,6 +235,20 @@ export function Preview(props: PreviewProps) {
       cerrado: allClosed 
     };
   }, [ambiente, meta]);
+
+  if (svgContent.startsWith('__ERROR__:')) {
+    return (
+      <div className="preview-area" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--red)', background: '#fff' }}>
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <strong>⚠️ Error en el motor de dibujo</strong><br/>
+          <small>Los datos de geometría contienen valores inválidos.</small>
+          <pre style={{ textAlign: 'left', marginTop: 10, fontSize: 10, color: '#333' }}>
+            {svgContent.substring(10)}
+          </pre>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="panel-right">

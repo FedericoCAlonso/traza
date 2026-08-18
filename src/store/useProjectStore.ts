@@ -47,6 +47,7 @@ interface ProjectState {
   selectProject: (id: string | null) => void
   updateProject: (id: string, fn: (p: Project) => Project) => void
   deleteProject: (id: string) => void
+  duplicateProject: (id: string) => void
   
   setActiveAmbienteId: (id: string | null) => void
   updateAmbiente: (fn: (a: Ambiente) => Ambiente) => void
@@ -126,6 +127,22 @@ export const useProjectStore = create<ProjectState>()(
         activeProjectId: state.activeProjectId === id ? null : state.activeProjectId,
         activeAmbienteId: state.activeProjectId === id ? null : state.activeAmbienteId
       };
+    }),
+
+    duplicateProject: (id) => set((state) => {
+      const original = state.projects.find(p => p.id === id);
+      if (!original) return state;
+
+      const duplicated = normalizeProject({
+        ...original,
+        id: Date.now().toString(),
+        nombre: `${original.nombre} (Copia)`,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+
+      syncToFirebase(duplicated);
+      return { projects: [...state.projects, duplicated] };
     }),
 
     setActiveAmbienteId: (id) => set({ activeAmbienteId: id }),
