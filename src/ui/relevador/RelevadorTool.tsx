@@ -31,8 +31,12 @@ import {
   Binary, 
   Ruler, 
   Layers, 
-  Download 
+  Download,
+  Send 
 } from 'lucide-react'
+import { ConfigModal } from '../ConfigModal'
+import { useClientsStore } from '../../store/useClientsStore'
+import { enviarAlCotizador } from '../../lib/export/cotizadorBridge'
 
 const PLANTA_TABS = ['resumen', 'general', 'hoja', 'paredes', 'aberturas', 'maestro', 'cobertura'] as const
 const ELECTRICO_TABS = ['resumen', 'electrico', 'circuitos', 'conexiones', 'mediciones'] as const
@@ -65,6 +69,7 @@ export function RelevadorTool() {
   const [symDialog, setSymDialog] = useState<SymbolDialogData | null>(null)
   const [pendingConnectionStart, setPendingConnectionStart] = useState<string | null>(null)
   const [showExportModal, setShowExportModal] = useState(false)
+  const [showConfigModal, setShowConfigModal] = useState(false)
   const [campaniaActivaId, setCampaniaActivaId] = useState<string | null>(null)
   const [medicionDialog, setMedicionDialog] = useState<{
     elementoRef: ElementoMedicionRef;
@@ -230,6 +235,7 @@ export function RelevadorTool() {
         onGoHome={() => selectProject(null)}
         onUndo={() => {}}
         onShowExport={() => setShowExportModal(true)}
+        onOpenConfig={() => setShowConfigModal(true)}
       />
 
       <main className="main-content">
@@ -335,6 +341,12 @@ export function RelevadorTool() {
         />
       )}
 
+      {/* Modal M3 de Configuración General */}
+      <ConfigModal
+        isOpen={showConfigModal}
+        onClose={() => setShowConfigModal(false)}
+      />
+
       <button
         className="mobile-view-toggle"
         onClick={() => setMobileEditorVisible(!mobileEditorVisible)}
@@ -353,6 +365,7 @@ interface ExportModalProps {
 }
 
 function ExportModal({ project, ambiente, onCancel }: ExportModalProps) {
+  const { getClientById } = useClientsStore();
   const [opts, setOpts] = useState({
     md: true,
     mat: true,
@@ -423,17 +436,36 @@ function ExportModal({ project, ambiente, onCancel }: ExportModalProps) {
     onCancel();
   };
 
+  const handleSendCotizador = async () => {
+    const client = getClientById(project.clienteId);
+    const obra = client?.obras?.find(o => o.id === project.obraId);
+    const res = await enviarAlCotizador(project, client, obra);
+    if (confirm(`${res.message}\n\n¿Deseas abrir el Cotizador ahora?`)) {
+      window.open(res.urlCotizador, '_blank');
+    }
+    onCancel();
+  };
+
   return (
     <Modal
       isOpen={true}
       onClose={onCancel}
       title="Exportar Proyecto y Planos"
-      maxWidth="460px"
+      maxWidth="480px"
       footer={
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
           <button className="btn btn-primary btn-full" onClick={handleDownload}>
             <Download size={16} />
-            <span>Descargar Seleccionados</span>
+            <span>Descargar Archivos Técnicos</span>
+          </button>
+          <button
+            type="button"
+            className="btn btn-acc btn-full"
+            onClick={handleSendCotizador}
+            style={{ background: 'var(--primary-container)', color: 'var(--on-primary-container)', border: '1px solid var(--primary)' }}
+          >
+            <Send size={15} />
+            <span>💼 Enviar Cómputo al Cotizador (ieBA)</span>
           </button>
           <button className="btn btn-ghost btn-full" onClick={handleAll}>
             <span>Descargar Todo (MD + CSVs + SVGs)</span>

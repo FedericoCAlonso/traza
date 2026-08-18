@@ -81,9 +81,13 @@ export interface Project {
   // Relacional / config
   /** ID del cliente asociado al proyecto (referencia a colección `clientes`). */
   clienteId: string
+  /** ID de la obra específica del cliente. */
+  obraId?: string
   /** ID del electricista o proyectista responsable. */
   electricistaId: string
   estado: ProjectEstado
+  /** Cómputo métrico y desglose exportado al cotizador */
+  computoExportado?: any
   /**
    * Sistema de distribución de la instalación según IEC 60364:
    * - TT: neutro de la fuente y masas a tierra independiente

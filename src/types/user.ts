@@ -104,25 +104,3 @@ export interface Electricista extends AppUser {
   instrumentos: Instrumento[]
 }
 
-// ─── CLIENTE ───
-
-/**
- * Cliente o comitente de un proyecto eléctrico.
- * Puede ser una persona física o jurídica (empresa).
- */
-export interface Cliente {
-  id: string
-  /** Nombre completo o razón social del cliente. */
-  razonSocial: string
-  /** DNI (persona física) o CUIT (persona jurídica). */
-  dniCuit?: string
-  email?: string
-  telefono?: string
-  domicilio?: string
-  /** Nombre de la persona de contacto en caso de ser una empresa. */
-  contacto?: string
-  /** Timestamp Unix (ms) de creación del registro del cliente. */
-  createdAt: number
-  /** IDs de proyectos asociados a este cliente. */
-  proyectosIds?: string[]
-}

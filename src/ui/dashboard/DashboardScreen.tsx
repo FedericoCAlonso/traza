@@ -1,9 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
+import { useClientsStore } from '../../store/useClientsStore';
 import { createProject, exportBackupJSON, parseBackupJSON } from '../../lib/storage';
 import { exportAllProjectData } from '../../lib/exporters';
 import { useAuth } from '../../core/AuthContext';
 import { useTheme } from '../../hooks/useTheme';
+import { syncEngine } from '../../services/syncEngine';
+import { ConfigModal } from '../ConfigModal';
 import { Modal } from '../Modal';
 import { F } from '../Field';
 import type { Project } from '../../types/index';
@@ -24,8 +27,13 @@ import {
   Moon,
   Monitor,
   Upload,
-  HardDrive
+  HardDrive,
+  Settings,
+  Cloud,
+  Building,
+  Send
 } from 'lucide-react';
+import { enviarAlCotizador } from '../../lib/export/cotizadorBridge';
 
 export function DashboardScreen() {
   const { user, logout } = useAuth();
@@ -40,23 +48,122 @@ export function DashboardScreen() {
     importProjects 
   } = useProjectStore();
 
+  const { clients, addClient, addObra, getClientById } = useClientsStore();
+
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [isSyncingDrive, setIsSyncingDrive] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [selectedObraId, setSelectedObraId] = useState<string>('');
+  const [newClientName, setNewClientName] = useState('');
+  const [showNewClientInput, setShowNewClientInput] = useState(false);
+  const [newObraName, setNewObraName] = useState('');
+  const [newObraAddress, setNewObraAddress] = useState('');
+  const [showNewObraInput, setShowNewObraInput] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleCreateProject = () => {
-    const newProj = createProject('Nuevo Proyecto');
-    addProject(newProj);
+  const handleOpenCreateModal = () => {
+    const newProj = createProject('Nuevo Relevamiento');
+    setSelectedClientId('');
+    setSelectedObraId('');
+    setShowNewClientInput(false);
+    setShowNewObraInput(false);
     setEditingProject(newProj);
+  };
+
+  const handleEditProject = (p: Project) => {
+    setSelectedClientId(p.clienteId || '');
+    setSelectedObraId(p.obraId || '');
+    setShowNewClientInput(false);
+    setShowNewObraInput(false);
+    setEditingProject(p);
   };
 
   const handleDuplicate = (p: Project) => {
     duplicateProject(p.id);
   };
 
+  const handleClientSelect = (clientId: string) => {
+    setSelectedClientId(clientId);
+    if (!clientId) {
+      setSelectedObraId('');
+      return;
+    }
+    const client = getClientById(clientId);
+    if (client && editingProject) {
+      setEditingProject({
+        ...editingProject,
+        clienteId: client.id,
+        clienteNombre: client.razonSocial || client.nombre,
+        clienteTelefono: client.telefono || '',
+        clienteEmail: client.email || '',
+        clienteCuit: client.cuitDni || client.cuit || '',
+        localizacionDireccion: client.direccion || editingProject.localizacionDireccion,
+        localizacionCiudad: client.localidad || editingProject.localizacionCiudad,
+        localizacionProvincia: client.provincia || editingProject.localizacionProvincia,
+      });
+      // Seleccionar primera obra si existe
+      if (client.obras && client.obras.length > 0) {
+        setSelectedObraId(client.obras[0].id);
+      } else {
+        setSelectedObraId('');
+      }
+    }
+  };
+
+  const handleObraSelect = (obraId: string) => {
+    setSelectedObraId(obraId);
+    const client = getClientById(selectedClientId);
+    const obra = client?.obras?.find(o => o.id === obraId);
+    if (obra && editingProject) {
+      setEditingProject({
+        ...editingProject,
+        obraId: obra.id,
+        localizacionDireccion: obra.direccion || editingProject.localizacionDireccion,
+        localizacionCiudad: obra.localidad || editingProject.localizacionCiudad,
+        localizacionProvincia: obra.provincia || editingProject.localizacionProvincia,
+      });
+    }
+  };
+
+  const handleCreateQuickClient = () => {
+    if (!newClientName.trim()) return;
+    const created = addClient(newClientName.trim());
+    setSelectedClientId(created.id);
+    setShowNewClientInput(false);
+    setNewClientName('');
+    handleClientSelect(created.id);
+  };
+
+  const handleCreateQuickObra = () => {
+    if (!selectedClientId || !newObraName.trim()) return;
+    const created = addObra(selectedClientId, newObraName.trim(), newObraAddress.trim());
+    if (created) {
+      setSelectedObraId(created.id);
+      setShowNewObraInput(false);
+      setNewObraName('');
+      setNewObraAddress('');
+      handleObraSelect(created.id);
+    }
+  };
+
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingProject) {
-      updateProject(editingProject.id, () => ({ ...editingProject, updatedAt: Date.now() }));
+      const isNew = !projects.some(p => p.id === editingProject.id);
+      const toSave = {
+        ...editingProject,
+        clienteId: selectedClientId || editingProject.clienteId,
+        obraId: selectedObraId || editingProject.obraId,
+        updatedAt: Date.now()
+      };
+
+      if (isNew) {
+        addProject(toSave);
+      } else {
+        updateProject(editingProject.id, () => toSave);
+      }
       setEditingProject(null);
     }
   };
@@ -84,7 +191,29 @@ export function DashboardScreen() {
     }
   };
 
+  const handleDriveSync = async () => {
+    setIsSyncingDrive(true);
+    try {
+      const res = await syncEngine.executeDriveSync();
+      alert(res.message);
+    } catch (err: any) {
+      alert(`Error en sincronización con Drive: ${err.message}`);
+    } finally {
+      setIsSyncingDrive(false);
+    }
+  };
+
+  const handleSendToCotizador = async (p: Project) => {
+    const client = getClientById(p.clienteId);
+    const obra = client?.obras?.find(o => o.id === p.obraId);
+    const res = await enviarAlCotizador(p, client, obra);
+    if (confirm(`${res.message}\n\n¿Deseas abrir el Cotizador ahora para ver el presupuesto?`)) {
+      window.open(res.urlCotizador, '_blank');
+    }
+  };
+
   const formatDate = (ms: number) => new Date(ms).toLocaleDateString();
+  const selectedClient = getClientById(selectedClientId);
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', fontFamily: 'var(--sans)', color: 'var(--on-surface)' }}>
@@ -116,26 +245,45 @@ export function DashboardScreen() {
           </div>
           <div>
             <h1 className="m3-headline-small" style={{ margin: 0, color: 'var(--on-surface)' }}>
-              Mis Proyectos
+              Relevamientos & Planos
             </h1>
             <p className="m3-label-medium" style={{ margin: 0, color: 'var(--on-surface-var)' }}>
-              {projects.length} proyecto{projects.length === 1 ? '' : 's'} · Almacenamiento local y sincronización en la nube
+              {projects.length} relevamiento{projects.length === 1 ? '' : 's'} · {clients.length} cliente{clients.length === 1 ? '' : 's'} · Suite ieBA
             </p>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Drive sync button */}
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={handleDriveSync}
+            disabled={isSyncingDrive}
+            title="Sincronizar con Google Drive (Archivo Maestro)"
+          >
+            <Cloud size={16} className={isSyncingDrive ? 'spin' : ''} />
+            <span className="hide-mobile">{isSyncingDrive ? 'Sincronizando...' : 'Drive'}</span>
+          </button>
+
           {/* Theme switcher */}
           <button
             className="btn btn-ghost btn-sm"
             onClick={toggleTheme}
-            title={`Tema actual: ${themeMode === 'system' ? 'Sistema' : themeMode === 'dark' ? 'Oscuro' : 'Claro'} (Clic para alternar)`}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            title={`Tema actual: ${themeMode === 'system' ? 'Sistema' : themeMode === 'dark' ? 'Oscuro' : 'Claro'}`}
           >
             {themeMode === 'system' && <Monitor size={16} />}
             {themeMode === 'dark' && <Moon size={16} />}
             {themeMode === 'light' && <Sun size={16} />}
-            <span className="hide-mobile">{themeMode === 'system' ? 'Sistema' : themeMode === 'dark' ? 'Oscuro' : 'Claro'}</span>
+          </button>
+
+          {/* Config button */}
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => setShowConfigModal(true)}
+            title="Configuración de Traza y Perfil"
+          >
+            <Settings size={16} />
+            <span className="hide-mobile">Configuración</span>
           </button>
 
           {/* Backup buttons */}
@@ -189,15 +337,15 @@ export function DashboardScreen() {
             </div>
           )}
 
-          <button className="btn btn-primary" onClick={handleCreateProject}>
+          <button className="btn btn-primary" onClick={handleOpenCreateModal}>
             <Plus size={18} />
-            <span>Nuevo Proyecto</span>
+            <span>Nuevo Relevamiento</span>
           </button>
         </div>
       </div>
 
       {/* Grid de Proyectos */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 350px), 1fr))', gap: '1.5rem' }}>
         {projects.length === 0 ? (
           <div
             className="empty-state"
@@ -211,144 +359,170 @@ export function DashboardScreen() {
           >
             <HardDrive size={48} style={{ opacity: 0.5, color: 'var(--primary)' }} />
             <div className="m3-title-medium" style={{ color: 'var(--on-surface)' }}>
-              No hay proyectos guardados
+              No hay relevamientos guardados
             </div>
             <div className="m3-body-small" style={{ color: 'var(--on-surface-var)', textAlign: 'center', maxWidth: 420 }}>
-              Creá un nuevo proyecto o restaurá un archivo de backup JSON para comenzar a relevar ambientes y circuitos.
+              Creá un nuevo croquis para comenzar a relevar ambientes, paredes y circuitos o sincronizá con tu Google Drive.
             </div>
             <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-              <button className="btn btn-acc" onClick={handleCreateProject}>
+              <button className="btn btn-acc" onClick={handleOpenCreateModal}>
                 <Plus size={18} />
-                <span>Crear Proyecto</span>
+                <span>Crear Relevamiento</span>
               </button>
-              <button className="btn btn-ghost" onClick={handleBackupImportClick}>
-                <Upload size={16} />
-                <span>Restaurar Backup</span>
+              <button className="btn btn-ghost" onClick={handleDriveSync}>
+                <Cloud size={16} />
+                <span>Sincronizar con Drive</span>
               </button>
             </div>
           </div>
         ) : (
-          projects.map((p) => (
-            <div
-              key={p.id}
-              className="card"
-              style={{
-                background: 'var(--surface-container)',
-                borderRadius: 'var(--r)',
-                padding: '20px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '14px',
-                border: '1px solid var(--outline-var)',
-                transition: 'transform .2s ease, box-shadow .2s ease',
-              }}
-            >
-              <div>
-                <h3 className="m3-title-large" style={{ margin: 0, color: 'var(--on-surface)' }}>
-                  {p.nombre}
-                </h3>
-                <div
-                  className="m3-label-small"
-                  style={{
-                    color: 'var(--on-surface-var)',
-                    marginTop: 4,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}
-                >
-                  <Calendar size={12} />
-                  <span>Actualizado: {formatDate(p.updatedAt)}</span>
-                </div>
-              </div>
+          projects.map((p) => {
+            const client = getClientById(p.clienteId);
+            const obra = client?.obras?.find(o => o.id === p.obraId);
 
+            return (
               <div
+                key={p.id}
+                className="card"
                 style={{
-                  fontSize: '13px',
-                  color: 'var(--on-surface-var)',
+                  background: 'var(--surface-container)',
+                  borderRadius: 'var(--r)',
+                  padding: '20px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '6px',
-                  background: 'var(--surface-container-low)',
-                  padding: '10px 12px',
-                  borderRadius: 'var(--r-sm)',
+                  gap: '14px',
+                  border: '1px solid var(--outline-var)',
+                  transition: 'transform .2s ease, box-shadow .2s ease',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <UserIcon size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                  <span>
-                    <strong style={{ color: 'var(--on-surface)' }}>Cliente:</strong> {p.clienteNombre || 'Sin especificar'}
-                  </span>
+                <div>
+                  <h3 className="m3-title-large" style={{ margin: 0, color: 'var(--on-surface)' }}>
+                    {p.nombre}
+                  </h3>
+                  <div
+                    className="m3-label-small"
+                    style={{
+                      color: 'var(--on-surface-var)',
+                      marginTop: 4,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <Calendar size={12} />
+                    <span>Actualizado: {formatDate(p.updatedAt)}</span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <MapPin size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                  <span>
-                    <strong style={{ color: 'var(--on-surface)' }}>Ubicación:</strong>{' '}
-                    {p.localizacionDireccion || 'Sin especificar'} {p.localizacionCiudad ? `(${p.localizacionCiudad})` : ''}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Layers size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                  <span>
-                    <strong style={{ color: 'var(--on-surface)' }}>Ambientes:</strong> {p.ambientes?.length || 0}
-                  </span>
-                </div>
-              </div>
 
-              <div style={{ display: 'flex', gap: '6px', marginTop: 'auto', flexWrap: 'wrap' }}>
-                <button
-                  className="btn btn-primary btn-sm"
-                  style={{ flex: '1 1 100px' }}
-                  onClick={() => selectProject(p.id)}
-                  title="Abrir editor"
-                >
-                  <FolderOpen size={16} />
-                  <span>Abrir</span>
-                </button>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => setEditingProject(p)}
-                  title="Editar datos del proyecto"
-                >
-                  <Pencil size={14} />
-                  <span className="hide-mobile">Editar</span>
-                </button>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => exportAllProjectData(p)}
-                  title="Exportar informes y planos"
-                >
-                  <Download size={14} />
-                </button>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => handleDuplicate(p)}
-                  title="Duplicar proyecto"
-                >
-                  <Copy size={14} />
-                </button>
-                <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() => {
-                    if (confirm(`¿Eliminar proyecto "${p.nombre}"?`)) deleteProject(p.id);
+                <div
+                  style={{
+                    fontSize: '13px',
+                    color: 'var(--on-surface-var)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                    background: 'var(--surface-container-low)',
+                    padding: '10px 12px',
+                    borderRadius: 'var(--r-sm)',
                   }}
-                  title="Eliminar proyecto"
                 >
-                  <Trash2 size={14} />
-                </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <UserIcon size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                    <span>
+                      <strong style={{ color: 'var(--on-surface)' }}>Cliente:</strong>{' '}
+                      {client ? (client.razonSocial || client.nombre) : (p.clienteNombre || 'Sin asignar')}
+                    </span>
+                  </div>
+
+                  {obra && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Building size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                      <span>
+                        <strong style={{ color: 'var(--on-surface)' }}>Obra:</strong> {obra.nombre}
+                      </span>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <MapPin size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                    <span>
+                      <strong style={{ color: 'var(--on-surface)' }}>Ubicación:</strong>{' '}
+                      {p.localizacionDireccion || 'Sin especificar'} {p.localizacionCiudad ? `(${p.localizacionCiudad})` : ''}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Layers size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                    <span>
+                      <strong style={{ color: 'var(--on-surface)' }}>Ambientes:</strong> {p.ambientes?.length || 0}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '6px', marginTop: 'auto', flexWrap: 'wrap' }}>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    style={{ flex: '1 1 90px' }}
+                    onClick={() => selectProject(p.id)}
+                    title="Abrir editor de croquis"
+                  >
+                    <FolderOpen size={16} />
+                    <span>Abrir</span>
+                  </button>
+
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => handleSendToCotizador(p)}
+                    title="Enviar cómputo de materiales al Cotizador"
+                    style={{ color: 'var(--primary)' }}
+                  >
+                    <Send size={14} />
+                    <span className="hide-mobile">Cotizar</span>
+                  </button>
+
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => handleEditProject(p)}
+                    title="Editar datos del proyecto"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => exportAllProjectData(p)}
+                    title="Exportar planos e informes"
+                  >
+                    <Download size={14} />
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => handleDuplicate(p)}
+                    title="Duplicar proyecto"
+                  >
+                    <Copy size={14} />
+                  </button>
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => {
+                      if (confirm(`¿Eliminar relevamiento "${p.nombre}"?`)) deleteProject(p.id);
+                    }}
+                    title="Eliminar relevamiento"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
-      {/* Modal M3 para Editar Proyecto */}
+      {/* Modal M3 para Crear / Editar Proyecto con Selector de Clientes y Obras */}
       {editingProject && (
         <Modal
           isOpen={true}
           onClose={() => setEditingProject(null)}
-          title="Editar Proyecto"
-          maxWidth="560px"
+          title={projects.some(p => p.id === editingProject.id) ? "Editar Relevamiento" : "Nuevo Relevamiento"}
+          maxWidth="620px"
           footer={
             <>
               <button type="button" className="btn btn-ghost" onClick={() => setEditingProject(null)}>
@@ -357,69 +531,127 @@ export function DashboardScreen() {
               <button
                 type="button"
                 className="btn btn-primary"
-                onClick={() => {
-                  updateProject(editingProject.id, () => ({ ...editingProject, updatedAt: Date.now() }));
-                  setEditingProject(null);
-                }}
+                onClick={handleSaveEdit}
               >
-                Guardar Cambios
+                Guardar
               </button>
             </>
           }
         >
-          <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div style={{ gridColumn: '1 / -1' }}>
-                <F label="Nombre del Proyecto *">
+                <F label="Nombre del Relevamiento / Plano *">
                   <input
                     required
                     type="text"
                     value={editingProject.nombre}
                     onChange={(e) => setEditingProject({ ...editingProject, nombre: e.target.value })}
+                    placeholder="Ej: Croquis Eléctrico - Planta Baja"
                   />
                 </F>
               </div>
 
-              <div>
-                <F label="Cliente (Nombre)">
-                  <input
-                    type="text"
-                    value={editingProject.clienteNombre || ''}
-                    onChange={(e) => setEditingProject({ ...editingProject, clienteNombre: e.target.value })}
-                  />
+              {/* Selector de Cliente */}
+              <div style={{ gridColumn: '1 / -1' }}>
+                <F label="Cliente Asociado (Suite ieBA)">
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <select
+                      value={selectedClientId}
+                      onChange={(e) => handleClientSelect(e.target.value)}
+                      style={{ flex: 1 }}
+                    >
+                      <option value="">-- Seleccionar de mis Clientes --</option>
+                      {clients.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.razonSocial || c.nombre} {c.cuitDni ? `(${c.cuitDni})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setShowNewClientInput(!showNewClientInput)}
+                      title="Crear nuevo cliente rápido"
+                    >
+                      <Plus size={16} />
+                      <span>{showNewClientInput ? 'Cancelar' : 'Nuevo'}</span>
+                    </button>
+                  </div>
                 </F>
-              </div>
-              <div>
-                <F label="Teléfono Cliente">
-                  <input
-                    type="text"
-                    value={editingProject.clienteTelefono || ''}
-                    onChange={(e) => setEditingProject({ ...editingProject, clienteTelefono: e.target.value })}
-                  />
-                </F>
+
+                {showNewClientInput && (
+                  <div style={{ marginTop: '8px', padding: '10px', background: 'var(--surface-container-high)', borderRadius: 'var(--r-sm)', display: 'flex', gap: '8px' }}>
+                    <input
+                      type="text"
+                      placeholder="Nombre / Razón Social del nuevo cliente"
+                      value={newClientName}
+                      onChange={(e) => setNewClientName(e.target.value)}
+                      style={{ flex: 1 }}
+                    />
+                    <button type="button" className="btn btn-primary btn-sm" onClick={handleCreateQuickClient}>
+                      Agregar Cliente
+                    </button>
+                  </div>
+                )}
               </div>
 
-              <div>
-                <F label="Email Cliente">
-                  <input
-                    type="email"
-                    value={editingProject.clienteEmail || ''}
-                    onChange={(e) => setEditingProject({ ...editingProject, clienteEmail: e.target.value })}
-                  />
-                </F>
-              </div>
-              <div>
-                <F label="CUIT / DNI">
-                  <input
-                    type="text"
-                    value={editingProject.clienteCuit || ''}
-                    onChange={(e) => setEditingProject({ ...editingProject, clienteCuit: e.target.value })}
-                  />
-                </F>
-              </div>
+              {/* Selector de Obra del Cliente */}
+              {selectedClientId && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <F label="Obra / Inmueble del Cliente">
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <select
+                        value={selectedObraId}
+                        onChange={(e) => handleObraSelect(e.target.value)}
+                        style={{ flex: 1 }}
+                      >
+                        <option value="">-- Seleccionar Obra --</option>
+                        {selectedClient?.obras?.map(o => (
+                          <option key={o.id} value={o.id}>
+                            {o.nombre} ({o.direccion})
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => setShowNewObraInput(!showNewObraInput)}
+                        title="Crear nueva obra para este cliente"
+                      >
+                        <Plus size={16} />
+                        <span>{showNewObraInput ? 'Cancelar' : 'Nueva Obra'}</span>
+                      </button>
+                    </div>
+                  </F>
+
+                  {showNewObraInput && (
+                    <div style={{ marginTop: '8px', padding: '10px', background: 'var(--surface-container-high)', borderRadius: 'var(--r-sm)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <input
+                        type="text"
+                        placeholder="Nombre de la Obra (ej: Depto 4B, Local Centro)"
+                        value={newObraName}
+                        onChange={(e) => setNewObraName(e.target.value)}
+                      />
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input
+                          type="text"
+                          placeholder="Dirección física de la obra"
+                          value={newObraAddress}
+                          onChange={(e) => setNewObraAddress(e.target.value)}
+                          style={{ flex: 1 }}
+                        />
+                        <button type="button" className="btn btn-primary btn-sm" onClick={handleCreateQuickObra}>
+                          Guardar Obra
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div style={{ gridColumn: '1 / -1' }}>
-                <F label="Dirección de la Obra">
+                <F label="Dirección de la Instalación">
                   <input
                     type="text"
                     value={editingProject.localizacionDireccion || ''}
@@ -448,9 +680,9 @@ export function DashboardScreen() {
               </div>
 
               <div style={{ gridColumn: '1 / -1' }}>
-                <F label="Descripción / Notas">
+                <F label="Descripción / Notas del Relevamiento">
                   <textarea
-                    rows={3}
+                    rows={2}
                     value={editingProject.descripcion || ''}
                     onChange={(e) => setEditingProject({ ...editingProject, descripcion: e.target.value })}
                   />
@@ -460,6 +692,12 @@ export function DashboardScreen() {
           </form>
         </Modal>
       )}
+
+      {/* Modal M3 de Configuración General de la Suite */}
+      <ConfigModal
+        isOpen={showConfigModal}
+        onClose={() => setShowConfigModal(false)}
+      />
     </div>
   );
 }

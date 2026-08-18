@@ -1,54 +1,57 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
 
 /* ═══════════════════════════════════════════════════════
-   DESIGN TOKENS – Material 3 / Jetpack Compose Dark
+   DESIGN TOKENS – Material 3 / ieBA Suite Theme
    Filosofía: superficies tonales, sin bordes duros,
-   elevación por color, máximo "breathing room".
+   elevación por color, paleta cálida ámbar/oro/carbón.
 ═══════════════════════════════════════════════════════ */
 :root {
-  /* Paleta base Light (Material 3) */
-  --seed:           #5243C2;      /* Color semilla */
-  --primary:        #5243C2;      /* Primary Light */
+  /* ── 1. Paleta base Light (Material 3 Seed #755B00) ── */
+  --seed:           #755B00;      /* Color semilla ieBA (Oro Cálido / Oliva) */
+  --primary:        #755B00;      /* Primary Light */
   --on-primary:     #FFFFFF;
-  --primary-container:  #E3DFFF;
-  --on-primary-container: #12005A;
+  --primary-container:  #FFDF97;
+  --on-primary-container: #241A00;
 
-  --secondary:      #605B71;
+  --secondary:      #695E40;
   --on-secondary:   #FFFFFF;
-  --secondary-container: #E6DFF9;
-  --on-secondary-container: #1D192B;
+  --secondary-container: #F1E2BD;
+  --on-secondary-container: #231B04;
 
-  --tertiary:       #7D5260;
+  --tertiary:       #486548;
   --on-tertiary:    #FFFFFF;
+  --tertiary-container: #CBEBC6;
+  --on-tertiary-container: #062109;
 
   --error:          #BA1A1A;
   --on-error:       #FFFFFF;
   --error-container: #FFDAD6;
+  --on-error-container: #410002;
 
   --success:        #2E7D32;
   --warning:        #ED6C02;
 
-  /* Superficies Light */
-  --surface:        #FDFCFF;   /* Surface base */
-  --surface-dim:    #DED8E1;
-  --surface-bright: #FDFCFF;
-  --surface-1:      #F5F2F7;
-  --surface-2:      #EFEBF1;
-  --surface-3:      #EAE5EC;
-  --surface-4:      #E8E2EA;
-  --surface-5:      #E3DDE5;
+  /* Superficies Light (Cálido Marfil / Crema) */
+  --surface:        #FFF8F1;   /* Surface base */
+  --surface-dim:    #E9E1D4;
+  --surface-bright: #FFF8F1;
+  --surface-1:      #F8EFE2;
+  --surface-2:      #F1E7DA;
+  --surface-3:      #EBE0D2;
+  --surface-4:      #E8DDCE;
+  --surface-5:      #E2D6C6;
 
   /* M3 Surface Container Roles Light */
   --surface-container-lowest:  #FFFFFF;
-  --surface-container-low:     #F7F2FA;
-  --surface-container:         #F1ECF4;
-  --surface-container-high:    #EBE6EE;
-  --surface-container-highest: #E5E0E8;
+  --surface-container-low:     #F8EFE2;
+  --surface-container:         #E9E1D4;
+  --surface-container-high:    #E8E2D4;
+  --surface-container-highest: #CCC5B8;
 
-  --on-surface:     #1C1B1F;
-  --on-surface-var: #48454E;
-  --outline:        rgba(0,0,0,0.12);
-  --outline-var:    rgba(0,0,0,0.06);
+  --on-surface:     #1F1B13;
+  --on-surface-var: #4A463C;
+  --outline:        rgba(124, 118, 107, 0.4);
+  --outline-var:    rgba(124, 118, 107, 0.15);
 
   /* Aliases funcionales Light */
   --bg:          var(--surface);
@@ -58,17 +61,17 @@
 
   --text:        var(--on-surface-var);
   --text-h:      var(--on-surface);
-  --text2:       #2B2930;
-  --text3:       #5E5B66;
-  --text-dim:    #79747E;
+  --text2:       #343027;
+  --text3:       #635E53;
+  --text-dim:    #7C766B;
 
   --border:      var(--outline-var);
   --border2:     var(--outline);
 
   --acc:         var(--primary);
   --acc2:        var(--primary-container);
-  --acc-bg:      rgba(82,67,194,0.08);
-  --acc-border:  rgba(82,67,194,0.25);
+  --acc-bg:      rgba(117, 91, 0, 0.08);
+  --acc-border:  rgba(117, 91, 0, 0.25);
 
   --accent:        var(--acc);
   --accent-bg:     var(--acc-bg);
@@ -88,15 +91,15 @@
   --r-full: 999px;
 
   /* Elevación como shadow sutil */
-  --shadow-1: 0 1px 2px rgba(0,0,0,0.08), 0 1px 3px 1px rgba(0,0,0,0.05);
-  --shadow-2: 0 1px 2px rgba(0,0,0,0.1), 0 2px 6px 2px rgba(0,0,0,0.08);
-  --shadow-3: 0 4px 8px 3px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12);
+  --shadow-1: 0 1px 2px rgba(31,27,19,0.08), 0 1px 3px 1px rgba(31,27,19,0.05);
+  --shadow-2: 0 1px 2px rgba(31,27,19,0.1), 0 2px 6px 2px rgba(31,27,19,0.08);
+  --shadow-3: 0 4px 8px 3px rgba(31,27,19,0.08), 0 1px 3px rgba(31,27,19,0.12);
   --shadow:   var(--shadow-2);
 
-  /* Tipografía */
-  --sans:    'Inter', system-ui, -apple-system, sans-serif;
+  /* Tipografía Oficial ieBA */
+  --sans:    'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --heading: var(--sans);
-  --mono:    ui-monospace, 'JetBrains Mono', Consolas, monospace;
+  --mono:    'JetBrains Mono', ui-monospace, Consolas, monospace;
 
   /* Espaciado */
   --topbar-h: 60px;
@@ -106,53 +109,56 @@
 }
 
 /* ═══════════════════════════════════════════════════════
-   DARK THEME (Material 3 Dark)
+   DARK THEME (Material 3 Dark - ieBA Gold / Charcoal)
 ═══════════════════════════════════════════════════════ */
 html.dark,
 :root.dark,
 .dark {
-  --seed:           #9B8FFF;
-  --primary:        #CBC4FF;      /* Primary Dark */
-  --on-primary:     #2D2593;
-  --primary-container:  #433B7B;
-  --on-primary-container: #E3DFFF;
+  --seed:           #EEC148;
+  --primary:        #EEC148;      /* Primary Dark (Oro/Ámbar Luminoso) */
+  --on-primary:     #3E2E00;
+  --primary-container:  #594400;
+  --on-primary-container: #FFDF97;
 
-  --secondary:      #CEC1E6;
-  --on-secondary:   #352E4C;
-  --secondary-container: #4C4464;
-  --on-secondary-container: #EBDEFF;
+  --secondary:      #D4C6A2;
+  --on-secondary:   #392F15;
+  --secondary-container: #504629;
+  --on-secondary-container: #F1E2BD;
 
-  --tertiary:       #F2B8C6;
-  --on-tertiary:    #4B1228;
+  --tertiary:       #AFCFAB;
+  --on-tertiary:    #1B361C;
+  --tertiary-container: #314D31;
+  --on-tertiary-container: #CBEBC6;
 
   --error:          #FFB4AB;
   --on-error:       #690005;
   --error-container: #93000A;
+  --on-error-container: #FFDAD6;
 
   --success:        #86EFAC;
   --warning:        #FDE68A;
 
-  /* Superficies Dark */
-  --surface:        #141218;   /* Surface base */
-  --surface-dim:    #141218;
-  --surface-bright: #2B2930;
-  --surface-1:      #1E1C24;
-  --surface-2:      #231F2B;
-  --surface-3:      #282433;
-  --surface-4:      #29253B;
-  --surface-5:      #2D2840;
+  /* Superficies Dark (Carbón Profundo con Calidez Ámbar) */
+  --surface:        #14120C;   /* Surface base */
+  --surface-dim:    #14120C;
+  --surface-bright: #2F2A1E;
+  --surface-1:      #1C1811;
+  --surface-2:      #252017;
+  --surface-3:      #2F2A1E;
+  --surface-4:      #353022;
+  --surface-5:      #3B3527;
 
   /* M3 Surface Container Roles Dark */
-  --surface-container-lowest:  #0F0D13;
-  --surface-container-low:     #1D1B20;
-  --surface-container:         #211F26;
-  --surface-container-high:    #2B2930;
-  --surface-container-highest: #36343B;
+  --surface-container-lowest:  #0C0A06;
+  --surface-container-low:     #1C1811;
+  --surface-container:         #252017;
+  --surface-container-high:    #2F2A1E;
+  --surface-container-highest: #3B3527;
 
-  --on-surface:     #E6E1E5;
-  --on-surface-var: #CAC4D0;
-  --outline:        rgba(255,255,255,0.12);
-  --outline-var:    rgba(255,255,255,0.06);
+  --on-surface:     #E9E1D4;
+  --on-surface-var: #CCC5B8;
+  --outline:        rgba(204, 197, 184, 0.25);
+  --outline-var:    rgba(204, 197, 184, 0.1);
 
   /* Aliases funcionales Dark */
   --bg:          var(--surface);
@@ -162,17 +168,17 @@ html.dark,
 
   --text:        var(--on-surface-var);
   --text-h:      var(--on-surface);
-  --text2:       #E6E1E5;
-  --text3:       #938F99;
-  --text-dim:    #6C6877;
+  --text2:       #E9E1D4;
+  --text3:       #B1AA9E;
+  --text-dim:    #7C766B;
 
   --border:      var(--outline-var);
   --border2:     var(--outline);
 
   --acc:         var(--primary);
   --acc2:        var(--on-primary-container);
-  --acc-bg:      rgba(203,196,255,0.12);
-  --acc-border:  rgba(203,196,255,0.25);
+  --acc-bg:      rgba(238, 193, 72, 0.12);
+  --acc-border:  rgba(238, 193, 72, 0.25);
 
   --accent:        var(--acc);
   --accent-bg:     var(--acc-bg);
@@ -183,9 +189,9 @@ html.dark,
   --orange:  var(--warning);
   --blue:    #93CAFF;
 
-  --shadow-1: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px 1px rgba(0,0,0,0.15);
-  --shadow-2: 0 1px 2px rgba(0,0,0,0.3), 0 2px 6px 2px rgba(0,0,0,0.15);
-  --shadow-3: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-1: 0 1px 2px rgba(0,0,0,0.4), 0 1px 3px 1px rgba(0,0,0,0.25);
+  --shadow-2: 0 1px 2px rgba(0,0,0,0.4), 0 2px 6px 2px rgba(0,0,0,0.25);
+  --shadow-3: 0 4px 8px 3px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.4);
   --shadow:   var(--shadow-2);
 
   color-scheme: dark;

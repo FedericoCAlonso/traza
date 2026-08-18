@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Project } from '../types/index';
-import { RotateCcw, Download, X, ChevronRight, Sun, Moon, Monitor } from 'lucide-react';
+import { RotateCcw, Download, X, ChevronRight, Sun, Moon, Monitor, Settings } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 
 interface AppHeaderProps {
@@ -12,6 +12,7 @@ interface AppHeaderProps {
   onGoHome: () => void;
   onUndo: () => void;
   onShowExport: () => void;
+  onOpenConfig?: () => void;
 }
 
 export function AppHeader({
@@ -22,7 +23,8 @@ export function AppHeader({
   modeSelector,
   onGoHome,
   onUndo,
-  onShowExport
+  onShowExport,
+  onOpenConfig
 }: AppHeaderProps) {
   const { themeMode, toggleTheme } = useTheme();
 
@@ -51,6 +53,16 @@ export function AppHeader({
       <span className="topbar-sep" />
 
       <div className="topbar-actions">
+        {onOpenConfig && (
+          <button
+            className="btn-topbar"
+            onClick={onOpenConfig}
+            title="Configuración general (Perfil, Drive, Tema)"
+          >
+            <Settings size={18} />
+          </button>
+        )}
+
         <button
           className="btn-topbar"
           onClick={toggleTheme}
