@@ -79,6 +79,30 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  const handleTriggerCleanup = async () => {
+    if (!confirm('¿Deseas purgar de la nube y del dispositivo todos los contactos y proyectos borrados o residuales de versiones anteriores?\n\nEsta acción dejará únicamente los registros activos y saneará la base de datos maestra.')) {
+      return;
+    }
+
+    setIsSyncing(true);
+    setStatusMessage(null);
+    setSyncState('idle');
+
+    try {
+      const result = await syncEngine.executeDataCleanup();
+      setSyncState('success');
+      setStatusMessage(result.message);
+      const now = new Date();
+      setLastSyncTime(now);
+      localStorage.setItem('ieba_last_sync_timestamp', now.toISOString());
+    } catch (err: any) {
+      setSyncState('error');
+      setStatusMessage(err.message || 'Error al ejecutar la limpieza de datos.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -277,6 +301,40 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose }) => {
             <span style={{ color: 'var(--on-surface-var)' }}>Motor de Fusión:</span>
             <strong style={{ color: 'var(--green)', fontFamily: 'monospace' }}>Last-Write-Wins (LWW)</strong>
           </div>
+        </div>
+
+        {/* Maintenance / Data Purge Section */}
+        <div
+          style={{
+            background: 'var(--surface-container-low)',
+            padding: '12px 14px',
+            borderRadius: 'var(--r)',
+            border: '1px dashed var(--outline-var)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '12px',
+            flexWrap: 'wrap'
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, minWidth: '220px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--on-surface)' }}>
+              🧹 Depurar y Compactar Base de Datos
+            </span>
+            <span style={{ fontSize: '11px', color: 'var(--on-surface-var)', lineHeight: 1.3 }}>
+              Elimina permanentemente de la nube y del dispositivo los contactos y relevamientos borrados o residuales de versiones anteriores.
+            </span>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={handleTriggerCleanup}
+            disabled={isSyncing}
+            style={{ fontSize: '12px', color: 'var(--red)', border: '1px solid var(--outline-var)' }}
+          >
+            {isSyncing ? 'Depurando...' : 'Limpiar y Purgar'}
+          </button>
         </div>
 
         {/* Manual Actions for JSON Backup Provider */}

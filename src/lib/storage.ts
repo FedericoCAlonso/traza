@@ -71,6 +71,17 @@ export const recordDeletedProjectId = (id: string, timestamp = Date.now()): void
 };
 
 /**
+ * Limpia el registro de IDs de proyectos eliminados (usado tras purga y compactación).
+ */
+export const clearDeletedProjectIds = (): void => {
+  try {
+    localStorage.removeItem(DELETED_PROJECTS_KEY);
+  } catch (err) {
+    console.error("Error al limpiar borrados en STORAGE:", err);
+  }
+};
+
+/**
  * Carga la lista de proyectos desde el LocalStorage.
  * @returns Array de proyectos deserializado, o array vacío en caso de error o ausencia de datos.
  */
