@@ -207,8 +207,9 @@ export function DashboardScreen() {
   const activeClients = clients.filter(c => !c.deleted);
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', fontFamily: 'var(--sans)', color: 'var(--on-surface)' }}>
-      {/* Hidden file input for JSON restore */}
+    <div className="dashboard-screen">
+      <div className="dashboard-container">
+        {/* Hidden file input for JSON restore */}
       <input
         type="file"
         ref={fileInputRef}
@@ -694,6 +695,7 @@ export function DashboardScreen() {
         isOpen={showSyncModal}
         onClose={() => setShowSyncModal(false)}
       />
+      </div>
     </div>
   );
 }

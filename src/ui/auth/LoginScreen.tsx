@@ -11,10 +11,11 @@ export function LoginScreen() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: '100vh',
+        minHeight: '100dvh',
         background: 'var(--surface)',
         color: 'var(--on-surface)',
         padding: '24px',
+        boxSizing: 'border-box',
       }}
     >
       <div
